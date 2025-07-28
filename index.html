@@ -290,22 +290,34 @@
         // Firebase Configuration (provided by the environment)
         let firebaseConfig = {};
         try {
-            // Attempt to parse __firebase_config. If it's undefined or empty, default to an empty object string.
             const configString = typeof __firebase_config !== 'undefined' && __firebase_config ? __firebase_config : '{}';
             firebaseConfig = JSON.parse(configString);
 
-            // If projectId is still missing after parsing (e.g., if configString was '{}'),
-            // log a warning and provide a placeholder.
-            if (!firebaseConfig.projectId) {
-                console.warn("Firebase 'projectId' not found in the provided __firebase_config. Using a placeholder for initialization. Please ensure your environment provides a complete Firebase config.");
-                // Provide a dummy projectId to allow initialization to proceed for testing/development.
-                // In a production environment, this should be properly configured.
-                firebaseConfig.projectId = "dummy-project-id-for-testing";
+            // Ensure essential Firebase config properties are present
+            const requiredKeys = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"];
+            requiredKeys.forEach(key => {
+                if (!firebaseConfig[key]) {
+                    console.warn(`Firebase config property '${key}' is missing or empty in __firebase_config. Using a placeholder for initialization. Please ensure your environment provides a complete Firebase config.`);
+                    // Provide dummy values to prevent initialization errors due to missing properties
+                    firebaseConfig[key] = `dummy-${key}-for-testing`;
+                }
+            });
+
+            // Special handling for projectId if it's still a dummy after the loop
+            if (firebaseConfig.projectId === "dummy-projectId-for-testing") {
+                 console.warn("Firebase 'projectId' not found in the provided __firebase_config. Using a placeholder for initialization.");
             }
+
         } catch (e) {
             console.error("Error parsing __firebase_config. Falling back to a dummy config:", e);
-            // Fallback for completely malformed __firebase_config
-            firebaseConfig = { projectId: "dummy-project-id-for-testing" };
+            firebaseConfig = {
+                apiKey: "dummy-apiKey-for-testing",
+                authDomain: "dummy-authDomain-for-testing",
+                projectId: "dummy-projectId-for-testing",
+                storageBucket: "dummy-storageBucket-for-testing",
+                messagingSenderId: "dummy-messagingSenderId-for-testing",
+                appId: "dummy-appId-for-testing"
+            };
         }
 
         // Initialize Firebase
@@ -325,12 +337,17 @@
                 userId = user.uid;
             } else {
                 // Sign in anonymously if no user is logged in
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    userId = auth.currentUser.uid;
-                } else {
-                    await signInAnonymously(auth);
-                    userId = auth.currentUser.uid;
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        userId = auth.currentUser.uid;
+                    } else {
+                        await signInAnonymously(auth);
+                        userId = auth.currentUser.uid;
+                    }
+                } catch (e) {
+                    console.error("Error during Firebase authentication (signInWithCustomToken or signInAnonymously):", e);
+                    // You might want to display a user-friendly message here
                 }
             }
             isAuthReady = true;
