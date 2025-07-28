@@ -3,23 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Partner Sync - PWA</title>
-
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#FFC0CB">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Partner Sync">
-    <!-- IMPORTANT: Ensure you have an actual icon-192x192.png file in your root directory -->
-    <link rel="apple-touch-icon" href="/icon-192x192.png">
-
-    <!-- Link to your Web App Manifest -->
-    <link rel="manifest" href="/manifest.json">
-
-    <!-- Base URL for relative paths - CRUCIAL FOR GITHUB PAGES -->
-    <!-- Replace 'sync-app-pwa' with your actual repository name if different -->
-    <base href="/sync-app-pwa/"> 
+    <title>Partner Sync</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -76,34 +60,6 @@
             serverTimestamp,
             config: firebaseConfig // Expose the config directly
         };
-
-        // Service Worker Management
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // First, unregister any existing service workers to clear old ones
-                navigator.serviceWorker.getRegistrations().then(registrations => {
-                    for (let registration of registrations) {
-                        console.log('Unregistering existing Service Worker:', registration.scope);
-                        registration.unregister();
-                    }
-                }).then(() => {
-                    // Then, attempt to register the new service worker
-                    console.log('Attempting to register new Service Worker...');
-                    navigator.serviceWorker.register('/service-worker.js') // Path is relative to the <base> tag
-                        .then(registration => {
-                            console.log('Service Worker registered successfully with scope:', registration.scope);
-                        })
-                        .catch(error => {
-                            console.error('Service Worker registration failed:', error);
-                            console.error('Service Worker error details:', error.message, error.stack);
-                        });
-                }).catch(error => {
-                    console.error('Error during Service Worker unregistration:', error);
-                });
-            });
-        } else {
-            console.warn('Service Workers are not supported in this browser.');
-        }
     </script>
 </head>
 <body>
