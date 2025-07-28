@@ -17,6 +17,10 @@
     <!-- Link to your Web App Manifest -->
     <link rel="manifest" href="/manifest.json">
 
+    <!-- Base URL for relative paths - CRUCIAL FOR GITHUB PAGES -->
+    <!-- Replace 'sync-app-pwa' with your actual repository name if different -->
+    <base href="/sync-app-pwa/"> 
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
@@ -53,6 +57,9 @@
             appId: "1:400603607241:web:5b47581025c7723202dd18"
         };
 
+        // Log the config to console for debugging
+        console.log("Firebase Config loaded:", firebaseConfig);
+
         // Make Firebase functions and config globally available for the React component
         window.firebase = {
             initializeApp,
@@ -70,17 +77,32 @@
             config: firebaseConfig // Expose the config directly
         };
 
-        // Register the Service Worker
+        // Service Worker Management
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registered successfully with scope:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Service Worker registration failed:', error);
-                    });
+                // First, unregister any existing service workers to clear old ones
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    for (let registration of registrations) {
+                        console.log('Unregistering existing Service Worker:', registration.scope);
+                        registration.unregister();
+                    }
+                }).then(() => {
+                    // Then, attempt to register the new service worker
+                    console.log('Attempting to register new Service Worker...');
+                    navigator.serviceWorker.register('/service-worker.js') // Path is relative to the <base> tag
+                        .then(registration => {
+                            console.log('Service Worker registered successfully with scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('Service Worker registration failed:', error);
+                            console.error('Service Worker error details:', error.message, error.stack);
+                        });
+                }).catch(error => {
+                    console.error('Error during Service Worker unregistration:', error);
+                });
             });
+        } else {
+            console.warn('Service Workers are not supported in this browser.');
         }
     </script>
 </head>
