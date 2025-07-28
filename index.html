@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Love Story - PWA</title>
+    <title>Partner Sync - PWA</title>
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#FFC0CB">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Love Story">
+    <meta name="apple-mobile-web-app-title" content="Partner Sync">
     <!-- IMPORTANT: Ensure you have an actual icon-192x192.png file in your root directory -->
     <link rel="apple-touch-icon" href="/icon-192x192.png">
 
@@ -32,9 +32,9 @@
 
     <!-- React and ReactDOM CDNs -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Babel for JSX transformation in browser (for development/demo purposes) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -42,18 +42,18 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global variables provided by the Canvas environment
-        // For external hosting (like GitHub Pages), these will be undefined initially.
-        // The app will fall back to 'default-app-id' and anonymous sign-in.
-        // If you need specific Firebase config or auth token for your deployed app,
-        // you would hardcode them here (NOT RECOMMENDED for production keys) or
-        // use environment variables during a build process. For this simple PWA,
-        // anonymous sign-in with default-app-id is sufficient for shared data.
-        window.__firebase_config = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        window.__app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        window.__initial_auth_token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Manually defined Firebase config for GitHub Pages deployment
+        // This configuration is specific to YOUR Firebase project.
+        const firebaseConfig = {
+            apiKey: "AIzaSyB9_fYA3tF4D18lJ5QfjvolG0BWK2epa3A",
+            authDomain: "partnersyncapp.firebaseapp.com",
+            projectId: "partnersyncapp",
+            storageBucket: "partnersyncapp.firebasestorage.app",
+            messagingSenderId: "400603607241",
+            appId: "1:400603607241:web:5b47581025c7723202dd18"
+        };
 
-        // Make Firebase functions globally available for the React component
+        // Make Firebase functions and config globally available for the React component
         window.firebase = {
             initializeApp,
             getAuth,
@@ -66,7 +66,8 @@
             onSnapshot,
             query,
             orderBy,
-            serverTimestamp
+            serverTimestamp,
+            config: firebaseConfig // Expose the config directly
         };
 
         // Register the Service Worker
@@ -74,7 +75,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(registration => {
-                        console.log('Service Worker registered with scope:', registration.scope);
+                        console.log('Service Worker registered successfully with scope:', registration.scope);
                     })
                     .catch(error => {
                         console.error('Service Worker registration failed:', error);
@@ -89,14 +90,13 @@
     <!-- Your React App Component -->
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } = window.firebase;
-
-        // Ensure these global variables are defined by the environment
-        const firebaseConfig = window.__firebase_config;
-        const appId = window.__app_id;
-        const initialAuthToken = window.__initial_auth_token;
+        const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, config: firebaseConfigFromWindow } = window.firebase;
 
         function App() {
+          // Use the firebaseConfig directly from the window.firebase.config
+          const firebaseConfig = firebaseConfigFromWindow;
+          const appId = firebaseConfig.projectId; // Use projectId as appId for consistency
+
           const [db, setDb] = useState(null);
           const [auth, setAuth] = useState(null);
           const [userId, setUserId] = useState('');
@@ -134,6 +134,7 @@
           useEffect(() => {
             // Initialize Firebase services
             try {
+              console.log("Initializing Firebase with config:", firebaseConfig); // Debugging log
               const app = initializeApp(firebaseConfig);
               const firestore = getFirestore(app);
               const authentication = getAuth(app);
@@ -147,17 +148,12 @@
                   setIsAuthReady(true);
                   console.log("User authenticated:", user.uid);
                 } else {
-                  // Sign in anonymously if no user is found or initialAuthToken is not provided
+                  // Sign in anonymously if no user is found
                   try {
-                    if (initialAuthToken) {
-                      await signInWithCustomToken(authentication, initialAuthToken);
-                      console.log("Signed in with custom token.");
-                    } else {
-                      await signInAnonymously(authentication);
-                      console.log("Signed in anonymously.");
-                    }
+                    await signInAnonymously(authentication);
+                    console.log("Signed in anonymously.");
                   } catch (e) {
-                    console.error("Error during anonymous or custom token sign-in:", e);
+                    console.error("Error during anonymous sign-in:", e);
                     setError("Failed to authenticate. Please try again.");
                     setLoading(false);
                   }
@@ -194,7 +190,7 @@
 
               return () => unsubscribe(); // Clean up snapshot listener on unmount
             }
-          }, [db, isAuthReady]); // Re-run when db or isAuthReady changes
+          }, [db, isAuthReady, appId]); // Re-run when db, isAuthReady, or appId changes
 
           const handleAddMemory = async () => {
             if (newMemory.trim() === '' || !db || !userId) {
@@ -209,11 +205,11 @@
                 senderId: userId,
                 timestamp: serverTimestamp(), // Firestore server timestamp
               });
-              setNewMemory(''); // Clear input after adding
-              console.log("Memory added successfully.");
+              setNewMemory(''); // Clear input after sending
+              console.log("Message sent successfully.");
             } catch (e) {
-              console.error("Error adding memory: ", e);
-              setError("Failed to add memory.");
+              console.error("Error adding document: ", e);
+              setError("Failed to send message.");
             }
           };
 
@@ -225,7 +221,7 @@
           if (loading) {
             return (
               <div className="flex items-center justify-center min-h-screen bg-pink-50">
-                <div className="text-lg font-semibold text-pink-700">Loading your romantic app...</div>
+                <div className="text-lg font-semibold text-pink-700">Loading Partner Sync...</div>
               </div>
             );
           }
@@ -241,7 +237,7 @@
           return (
             <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col items-center p-4 font-inter text-gray-800">
               <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg mt-8 transform transition-all duration-300 hover:scale-[1.01]">
-                <h1 className="text-4xl font-extrabold text-center text-pink-700 mb-8 font-serif">Our Love Story</h1>
+                <h1 className="text-4xl font-extrabold text-center text-pink-700 mb-8 font-serif">Partner Sync</h1>
 
                 <div className="mb-6 text-sm text-gray-600 text-center">
                   Your unique ID: <span className="font-mono bg-pink-50 p-1 rounded-md text-pink-600">{userId}</span>
