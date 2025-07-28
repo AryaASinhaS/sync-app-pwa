@@ -2,7 +2,7 @@
   "name": "Our Love Story",
   "short_name": "Love Story",
   "description": "A fun, creative, and romantic app for you and your partner.",
-  "start_url": "/",
+  "start_url": "/sync-app-pwa/",
   "display": "standalone",
   "background_color": "#FFC0CB",
   "theme_color": "#FF69B4",
