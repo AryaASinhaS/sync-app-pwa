@@ -46,6 +46,7 @@
             transition: all 0.2s ease-in-out; /* Smooth transitions */
             text-align: center; /* Ensure text is centered */
             white-space: nowrap; /* Prevent text wrapping */
+            flex-grow: 1; /* Allow nav links to grow and fill space */
         }
         .nav-link.active {
             background-color: #fde68a; /* A soft yellow */
@@ -61,7 +62,7 @@
         /* Styles for the map */
         .map-container {
             position: relative;
-            max-width: 800px;
+            width: 100%; /* Make map container take full width */
             margin: auto;
             border: 2px solid #10b981; /* Border to define map area */
             border-radius: 0.5rem;
@@ -130,9 +131,8 @@
 <body class="text-amber-900">
 
     <!-- Top Navigation Bar -->
-    <header class="w-full bg-amber-100 p-4 shadow-lg flex flex-col items-center">
-        <h1 class="text-4xl text-amber-900 mb-4 text-center">❤️ Partner Sync</h1>
-        <nav id="main-nav" class="flex flex-wrap justify-center gap-2 md:gap-4">
+    <header class="w-full bg-amber-100 p-4 shadow-lg flex flex-col">
+        <nav id="main-nav" class="flex flex-wrap justify-around gap-2 md:gap-4 w-full">
             <a href="#reasons" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Reasons I Love You</a>
             <a href="#map" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Adventure Awaits</a>
             <a href="#bucket-list" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Our Bucket List</a>
@@ -147,7 +147,7 @@
             <!-- Section 1: Reasons I Love You -->
             <section id="reasons" class="content-section">
                 <h2 class="text-4xl font-bold mb-6">Reasons I Love You</h2>
-                <div class="bg-white p-8 rounded-xl shadow-md text-center min-h-[200px] flex flex-col justify-center items-center">
+                <div class="bg-white p-8 rounded-xl shadow-md text-center min-h-[200px] flex flex-col justify-center items-center w-full">
                     <p id="reason-text" class="text-2xl text-amber-800 italic transition-opacity duration-500">Click the heart to see a reason...</p>
                 </div>
                 <div class="text-center mt-8">
@@ -186,7 +186,7 @@
                     </div>
                 </div>
 
-                <div class="mt-8 p-6 bg-white rounded-xl shadow-md">
+                <div class="mt-8 p-6 bg-white rounded-xl shadow-md w-full">
                     <h3 class="text-2xl font-semibold mb-4">Plan a New Adventure!</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -209,7 +209,7 @@
             <!-- Section 2: Our Bucket List -->
             <section id="bucket-list" class="content-section">
                 <h2 class="text-4xl font-bold mb-6">Our Bucket List</h2>
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4 flex">
                         <input type="text" id="bucket-item-input" placeholder="Add a new bucket list item..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50 flex-grow">
                         <button id="add-bucket-item-btn" class="ml-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add</button>
@@ -223,7 +223,7 @@
             <!-- Section 6: Plan a Date -->
             <section id="date-night" class="content-section">
                 <h2 class="text-4xl font-bold mb-6">Plan a Date</h2>
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4">
                         <input type="text" id="date-idea-input" placeholder="Add a date idea..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
                         <button id="add-date-idea-btn" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Date Idea</button>
@@ -241,7 +241,7 @@
             <!-- Section 7: Compliment Jar -->
             <section id="compliments" class="content-section">
                 <h2 class="text-4xl font-bold mb-6">Compliment Jar</h2>
-                <div class="bg-white p-8 rounded-xl shadow-md">
+                <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4">
                         <textarea id="compliment-input" placeholder="Write a sweet compliment..." rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50"></textarea>
                         <button id="add-compliment-btn" class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Compliment</button>
