@@ -5,24 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partner Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- Updated Google Fonts import to include Caveat, Inter, and Playfair Display -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <!-- Font Awesome for Copy Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', sans-serif; /* Applied Inter for main body text for better readability */
             /* Using an image from GitHub as background */
-            background-image: url('https://github.com/AryaASinhaS/sync-app-pwa/blob/main/Main_BG.png?raw=true'); /* REPLACE THIS WITH YOUR ACTUAL GITHUB IMAGE URL */
+            background-image: url('https://github.com/AryaASinhaS/sync-app-pwa/blob/main/Main_BG.png?raw=true');
             background-size: cover; /* Cover the entire background */
             background-position: center; /* Center the image */
             background-repeat: no-repeat; /* Do not repeat the image */
             background-attachment: fixed; /* Keep background fixed while scrolling */
-            color: #78350f; /* Ensuring text color remains readable */
+            color: #4a0e4a; /* Dark purple for readability on light pink background */
         }
 
         h1, h2, h3 {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Playfair Display', serif; /* Headings now use Playfair Display for a fancier look */
         }
         /* Custom styles for animations and specific elements */
         .content-section {
@@ -40,23 +41,49 @@
             display: flex; /* Make links flex items */
             justify-content: center; /* Center text horizontally */
             align-items: center; /* Center text vertically */
-            padding: 0.75rem 1.25rem; /* Adjust padding for segment look */
-            border-radius: 9999px; /* Fully rounded corners for pill shape */
-            font-semibold;
-            transition: all 0.2s ease-in-out; /* Smooth transitions */
+            padding: 0.75rem 1.25rem; /* Keep padding for clickable area */
+            border-radius: 0; /* No rounded corners */
+            font-weight: 600; /* Semibold by default */
+            transition: all 0.2s ease-in-out; /* Smooth transitions for color, font-weight, shadow, transform, letter-spacing */
             text-align: center; /* Ensure text is centered */
             white-space: nowrap; /* Prevent text wrapping */
             flex-grow: 1; /* Allow nav links to grow and fill space */
+            background-color: transparent; /* Ensure no background */
+            box-shadow: none; /* Ensure no shadow */
+            transform: none; /* Ensure no transform */
+            color: #7e22ce; /* Default text color for nav links (purple) */
+            position: relative;
+            overflow: hidden;
+            text-shadow: none; /* No shadow by default */
+            letter-spacing: 0; /* No letter spacing by default */
         }
+        /* Remove ::after pseudo-element styles as requested */
+        .nav-link::after {
+            content: none; /* Remove the underline */
+        }
+
         .nav-link.active {
-            background-color: #fde68a; /* A soft yellow */
-            color: #78350f; /* A warm brown */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
-            transform: translateY(-2px); /* Slight lift effect */
+            background-color: transparent; /* No background */
+            color: #ffffff; /* White for active text */
+            font-weight: 900; /* Extra bold when active */
+            box-shadow: none; /* No shadow */
+            transform: scale(1.03); /* Slight zoom effect */
+            text-shadow: 0px 0px 8px rgba(0, 0, 0, 0.6); /* Stronger dark shadow for pop */
+            letter-spacing: 0.05em; /* Increased letter spacing */
         }
+
         .nav-link:hover:not(.active) {
-            background-color: #fcebaf; /* Lighter yellow on hover */
-            transform: translateY(-1px); /* Slight lift on hover */
+            background-color: transparent; /* No background */
+            color: #f8fafc; /* Light white on hover */
+            font-weight: 700; /* Bold on hover */
+            transform: scale(1.01); /* Subtle lift on hover */
+            box-shadow: none; /* No shadow */
+            text-shadow: 0px 0px 5px rgba(0, 0, 0, 0.4); /* Subtle dark shadow for pop */
+            letter-spacing: 0.02em; /* Slight letter spacing */
+        }
+        /* Ensure no ::after on hover either */
+        .nav-link:hover:not(.active)::after {
+            content: none;
         }
         
         /* Styles for the map */
@@ -64,7 +91,7 @@
             position: relative;
             width: 100%; /* Make map container take full width */
             margin: auto;
-            border: 2px solid #10b981; /* Border to define map area */
+            border: 2px solid #a855f7; /* Purple border to define map area */
             border-radius: 0.5rem;
             overflow: hidden; /* Ensure markers stay within bounds */
         }
@@ -86,14 +113,14 @@
         .map-text {
             font-size: 20px;
             text-anchor: middle;
-            fill: #047857;
+            fill: #7e22ce; /* Darker purple for map text */
         }
 
         .map-marker {
             position: absolute;
             width: 16px;
             height: 16px;
-            background-color: #ef4444; /* Red */
+            background-color: #ef4444; /* Red for markers, stands out */
             border-radius: 50%;
             border: 2px solid white;
             cursor: pointer;
@@ -126,18 +153,100 @@
             text-align: center;
             animation: fadeIn 0.3s;
         }
+
+        /* Fancier Button Styles */
+        .fancy-button {
+            font-family: 'Inter', sans-serif; /* Button font */
+            font-weight: 700; /* Bold */
+            color: white; /* White text */
+            padding: 0.75rem 1.5rem; /* Ample padding */
+            border-radius: 0.75rem; /* More rounded corners */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            transition: all 0.3s ease-in-out; /* Smooth transitions */
+            background-size: 200% auto; /* For gradient animation */
+            text-align: center;
+            cursor: pointer;
+            display: inline-flex; /* To allow flex properties if needed */
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Specific button colors with gradients */
+        .fancy-button.red-gradient {
+            background-image: linear-gradient(to right, #FF4B2B 0%, #FF416C 51%, #FF4B2B 100%);
+        }
+        .fancy-button.red-gradient:hover {
+            background-position: right center; /* Change the direction of the change */
+            box-shadow: 0 6px 15px rgba(255, 65, 108, 0.4); /* More intense shadow on hover */
+            transform: translateY(-2px) scale(1.02); /* Lift and slight scale */
+        }
+
+        .fancy-button.teal-gradient {
+            background-image: linear-gradient(to right, #1CD8D2 0%, #93EDC7 51%, #1CD8D2 100%);
+        }
+        .fancy-button.teal-gradient:hover {
+            background-position: right center;
+            box-shadow: 0 6px 15px rgba(28, 216, 210, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .fancy-button.purple-gradient {
+            background-image: linear-gradient(to right, #8E2DE2 0%, #4A00E0 51%, #8E2DE2 100%);
+        }
+        .fancy-button.purple-gradient:hover {
+            background-position: right center;
+            box-shadow: 0 6px 15px rgba(142, 45, 226, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .fancy-button.indigo-gradient {
+            background-image: linear-gradient(to right, #4B6CB7 0%, #182848 51%, #4B6CB7 100%);
+        }
+        .fancy-button.indigo-gradient:hover {
+            background-position: right center;
+            box-shadow: 0 6px 15px rgba(75, 108, 183, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .fancy-button.green-gradient {
+            background-image: linear-gradient(to right, #A8FF78 0%, #78FFD6 51%, #A8FF78 100%);
+        }
+        .fancy-button.green-gradient:hover {
+            background-position: right center;
+            box-shadow: 0 6px 15px rgba(168, 255, 120, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .fancy-button.rose-gradient {
+            background-image: linear-gradient(to right, #F02FC2 0%, #6094EA 51%, #F02FC2 100%);
+        }
+        .fancy-button.rose-gradient:hover {
+            background-position: right center;
+            box-shadow: 0 6px 15px rgba(240, 47, 194, 0.4);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .fancy-button.gray-solid {
+            background-color: #6B7280; /* Tailwind gray-500 equivalent */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .fancy-button.gray-solid:hover {
+            background-color: #4B5563; /* Tailwind gray-600 equivalent */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px) scale(1.02);
+        }
     </style>
 </head>
-<body class="text-amber-900">
+<body class="text-purple-900 bg-pink-50">
 
     <!-- Top Navigation Bar -->
-    <header class="w-full bg-amber-100 p-4 shadow-lg flex flex-col">
-        <nav id="main-nav" class="flex flex-wrap justify-around gap-2 md:gap-4 w-full">
-            <a href="#reasons" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Reasons I Love You</a>
-            <a href="#map" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Adventure Awaits</a>
-            <a href="#bucket-list" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Our Bucket List</a>
-            <a href="#date-night" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Plan a Date</a>
-            <a href="#compliments" class="nav-link bg-amber-50 hover:bg-amber-100 text-amber-800">Compliment Jar</a>
+    <header class="w-full bg-pink-200 p-4 shadow-lg">
+        <nav id="main-nav" class="flex justify-evenly gap-2 md:gap-4 w-full">
+            <a href="#reasons" class="nav-link text-purple-800">Reasons I Love You</a>
+            <a href="#map" class="nav-link text-purple-800">Adventure Awaits</a>
+            <a href="#bucket-list" class="nav-link text-purple-800">Our Bucket List</a>
+            <a href="#date-night" class="nav-link text-purple-800">Plan a Date</a>
+            <a href="#compliments" class="nav-link text-purple-800">Compliment Jar</a>
         </nav>
     </header>
 
@@ -146,61 +255,48 @@
         <main class="flex-1 p-6 md:p-10">
             <!-- Section 1: Reasons I Love You -->
             <section id="reasons" class="content-section">
-                <h2 class="text-4xl font-bold mb-6">Reasons I Love You</h2>
-                <div class="bg-white p-8 rounded-xl shadow-md text-center min-h-[200px] flex flex-col justify-center items-center w-full">
-                    <p id="reason-text" class="text-2xl text-amber-800 italic transition-opacity duration-500">Click the heart to see a reason...</p>
-                </div>
-                <div class="text-center mt-8">
-                    <button id="reason-btn" class="bg-red-500 text-white p-4 rounded-full shadow-lg hover:bg-red-600 transition-transform transform hover:scale-110">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                <div class="text-center mb-4">
+                    <button id="reason-btn" class="fancy-button red-gradient">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mr-2" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
                         </svg>
+                        Get a Reason
                     </button>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center min-h-[120px] flex flex-col justify-center items-center w-full">
+                    <p id="reason-text" class="text-2xl text-purple-800 italic transition-opacity duration-500">Click the heart to see a reason...</p>
                 </div>
             </section>
 
             <!-- Section 3: Adventure Awaits -->
             <section id="map" class="content-section">
-                <h2 class="text-4xl font-bold mb-6">Adventure Awaits</h2>
+                <h2 class="text-4xl font-bold mb-6 text-purple-700">Adventure Awaits</h2>
                 <div class="map-container">
-                    <!-- Detailed World Map SVG -->
                     <svg viewBox="0 0 1000 500" class="map-svg">
-                        <!-- Paths for continents and major landmasses (now transparent, background image provides the map) -->
-                        <!-- North America -->
-                        <path class="map-path" d="M 170 150 L 180 140 L 190 130 L 200 120 L 210 110 L 220 100 L 230 90 L 240 80 L 250 70 L 260 60 L 270 50 L 280 40 L 290 30 L 300 20 L 310 10 L 320 0 L 330 10 L 340 20 L 350 30 L 360 40 L 370 50 L 380 60 L 390 70 L 400 80 L 410 90 L 420 100 L 430 110 L 440 120 L 450 130 L 460 140 L 470 150 L 480 160 L 490 170 L 500 180 L 510 190 L 520 200 L 530 210 L 540 220 L 550 230 L 560 240 L 570 250 L 580 260 L 590 270 L 600 280 L 610 290 L 620 300 L 630 310 L 640 320 L 650 330 L 660 340 L 670 350 L 680 360 L 690 370 L 700 380 L 710 390 L 720 400 L 730 410 L 740 420 L 750 430 L 760 440 L 770 450 L 780 460 L 790 470 L 800 480 L 810 490 L 820 500 L 830 490 L 840 480 L 850 470 L 860 460 L 870 450 L 880 440 L 890 430 L 900 420 L 910 410 L 920 400 L 930 390 L 940 380 L 950 370 L 960 360 L 970 350 L 980 340 L 990 330 L 1000 320 L 990 310 L 980 300 L 970 290 L 960 280 L 950 270 L 940 260 L 930 250 L 920 240 L 910 230 L 900 220 L 890 210 L 880 200 L 870 190 L 860 180 L 850 170 L 840 160 L 830 150 L 820 140 L 810 130 L 800 120 L 790 110 L 780 100 L 770 90 L 760 80 L 750 70 L 740 60 L 730 50 L 720 40 L 710 30 L 700 20 L 690 10 L 680 0 L 670 10 L 660 20 L 650 30 L 640 40 L 630 50 L 620 60 L 610 70 L 600 80 L 590 90 L 580 100 L 570 110 L 560 120 L 550 130 L 540 140 L 530 150 L 520 160 L 510 170 L 500 180 L 490 190 L 480 200 L 470 210 L 460 220 L 450 230 L 440 240 L 430 250 L 420 260 L 410 270 L 400 280 L 390 290 L 380 300 L 370 310 L 360 320 L 350 330 L 340 340 L 330 350 L 320 360 L 310 370 L 300 380 L 290 390 L 280 400 L 270 410 L 260 420 L 250 430 L 240 440 L 230 450 L 220 460 L 210 470 L 200 480 L 190 490 L 180 500 L 170 490 L 160 480 L 150 470 L 140 460 L 130 450 L 120 440 L 110 430 L 100 420 L 90 410 L 80 400 L 70 390 L 60 380 L 50 370 L 40 360 L 30 350 L 20 340 L 10 330 L 0 320 L 10 310 L 20 300 L 30 290 L 40 280 L 50 270 L 60 260 L 70 250 L 80 240 L 90 230 L 100 220 L 110 210 L 120 200 L 130 190 L 140 180 L 150 170 L 160 160 L 170 150 Z" />
-                        <!-- South America -->
-                        <path class="map-path" d="M 280 350 L 290 340 L 300 330 L 310 320 L 320 310 L 330 300 L 340 290 L 350 280 L 360 270 L 370 260 L 380 250 L 390 240 L 400 230 L 410 220 L 420 210 L 430 200 L 440 190 L 450 180 L 460 170 L 470 160 L 480 150 L 490 140 L 500 130 L 510 120 L 520 110 L 530 100 L 540 90 L 550 80 L 560 70 L 570 60 L 580 50 L 590 40 L 600 30 L 610 20 L 620 10 L 630 0 L 640 10 L 650 20 L 660 30 L 670 40 L 680 50 L 690 60 L 700 70 L 710 80 L 720 90 L 730 100 L 740 110 L 750 120 L 760 130 L 770 140 L 780 150 L 790 160 L 800 170 L 810 180 L 820 190 L 830 200 L 840 210 L 850 220 L 860 230 L 870 240 L 880 250 L 890 260 L 900 270 L 910 280 L 920 290 L 930 300 L 940 310 L 950 320 L 960 330 L 970 340 L 980 350 L 990 360 L 1000 370 L 990 380 L 980 390 L 970 400 L 960 410 L 950 420 L 940 430 L 930 440 L 920 450 L 910 460 L 900 470 L 890 480 L 880 490 L 870 500 L 860 490 L 850 480 L 840 470 L 830 460 L 820 450 L 810 440 L 800 430 L 790 420 L 780 410 L 770 400 L 760 390 L 750 380 L 740 370 L 730 360 L 720 350 L 710 340 L 700 330 L 690 320 L 680 310 L 670 300 L 660 290 L 650 280 L 640 270 L 630 260 L 620 250 L 610 240 L 600 230 L 590 220 L 580 210 L 570 200 L 560 190 L 550 180 L 540 170 L 530 160 L 520 150 L 510 140 L 500 130 L 490 120 L 480 110 L 470 100 L 460 90 L 450 80 L 440 70 L 430 60 L 420 50 L 410 40 L 400 30 L 390 20 L 380 10 L 370 0 L 360 10 L 350 20 L 340 30 L 330 40 L 320 50 L 310 60 L 300 70 L 290 80 L 280 90 L 270 100 L 260 110 L 250 120 L 240 130 L 230 140 L 220 150 L 210 160 L 200 170 L 190 180 L 180 190 L 170 200 L 160 210 L 150 220 L 140 230 L 130 240 L 120 250 L 110 260 L 100 270 L 90 280 L 80 290 L 70 300 L 60 310 L 50 320 L 40 330 L 30 340 L 20 350 L 10 360 L 0 370 L 10 380 L 20 390 L 30 400 L 40 410 L 50 420 L 60 430 L 70 440 L 80 450 L 90 460 L 100 470 L 110 480 L 120 490 L 130 500 L 140 490 L 150 480 L 160 470 L 170 460 L 180 450 L 190 440 L 200 430 L 210 420 L 220 410 L 230 400 L 240 390 L 250 380 L 260 370 L 270 360 L 280 350 Z" />
-                        <!-- Europe -->
-                        <path class="map-path" d="M 500 100 L 510 90 L 520 80 L 530 70 L 540 60 L 550 50 L 560 40 L 570 30 L 580 20 L 590 10 L 600 0 L 610 10 L 620 20 L 630 30 L 640 40 L 650 50 L 660 60 L 670 70 L 680 80 L 690 90 L 700 100 L 710 110 L 720 120 L 730 130 L 740 140 L 750 150 L 760 160 L 770 170 L 780 180 L 790 190 L 800 200 L 810 210 L 820 220 L 830 230 L 840 240 L 850 250 L 860 260 L 870 270 L 880 280 L 890 290 L 900 300 L 910 310 L 920 320 L 930 330 L 940 340 L 950 350 L 960 360 L 970 370 L 980 380 L 990 390 L 1000 400 L 990 410 L 980 420 L 970 430 L 960 440 L 950 450 L 940 460 L 930 470 L 920 480 L 910 490 L 900 500 L 890 490 L 880 480 L 870 470 L 860 460 L 850 450 L 840 440 L 830 430 L 820 420 L 810 410 L 800 400 L 790 390 L 780 380 L 770 370 L 760 360 L 750 350 L 740 340 L 730 330 L 720 320 L 710 310 L 700 300 L 690 290 L 680 280 L 670 270 L 660 260 L 650 250 L 640 240 L 630 230 L 620 220 L 610 210 L 600 200 L 590 190 L 580 180 L 570 170 L 560 160 L 550 150 L 540 140 L 530 130 L 520 120 L 510 110 L 500 100 Z" />
-                        <!-- Africa -->
-                        <path class="map-path" d="M 500 250 L 510 240 L 520 230 L 530 220 L 540 210 L 550 200 L 560 190 L 570 180 L 580 170 L 590 160 L 600 150 L 610 140 L 620 130 L 630 120 L 640 110 L 650 100 L 660 90 L 670 80 L 680 70 L 690 60 L 700 50 L 710 40 L 720 30 L 730 20 L 740 10 L 750 0 L 760 10 L 770 20 L 780 30 L 790 40 L 800 50 L 810 60 L 820 70 L 830 80 L 840 90 L 850 100 L 860 110 L 870 120 L 880 130 L 890 140 L 900 150 L 910 160 L 920 170 L 930 180 L 940 190 L 950 200 L 960 210 L 970 220 L 980 230 L 990 240 L 1000 250 L 990 260 L 980 270 L 970 280 L 960 290 L 950 300 L 940 310 L 930 320 L 920 330 L 910 340 L 900 350 L 890 360 L 880 370 L 870 380 L 860 390 L 850 400 L 840 410 L 830 420 L 820 430 L 810 440 L 800 450 L 790 460 L 780 470 L 770 480 L 760 490 L 750 500 L 740 490 L 730 480 L 720 470 L 710 460 L 700 450 L 690 440 L 680 430 L 670 420 L 660 410 L 650 400 L 640 390 L 630 380 L 620 370 L 610 360 L 600 350 L 590 340 L 580 330 L 570 320 L 560 310 L 550 300 L 540 290 L 530 280 L 520 270 L 510 260 L 500 250 Z" />
-                        <!-- Asia -->
-                        <path class="map-path" d="M 700 150 L 710 140 L 720 130 L 730 120 L 740 110 L 750 100 L 760 90 L 770 80 L 780 70 L 790 60 L 800 50 L 810 40 L 820 30 L 830 20 L 840 10 L 850 0 L 860 10 L 870 20 L 880 30 L 890 40 L 900 50 L 910 60 L 920 70 L 930 80 L 940 90 L 950 100 L 960 110 L 970 120 L 980 130 L 990 140 L 1000 150 L 990 160 L 980 170 L 970 180 L 960 190 L 950 200 L 940 210 L 930 220 L 920 230 L 910 240 L 900 250 L 890 260 L 880 270 L 870 280 L 860 290 L 850 300 L 840 310 L 830 320 L 820 330 L 810 340 L 800 350 L 790 360 L 780 370 L 770 380 L 760 390 L 750 400 L 740 410 L 730 420 L 710 440 L 700 450 L 690 440 L 680 430 L 670 420 L 660 410 L 650 400 L 640 390 L 630 380 L 620 370 L 610 360 L 600 350 L 590 340 L 580 330 L 570 320 L 560 310 L 550 300 L 540 290 L 530 280 L 520 270 L 510 260 L 500 250 Z" />
-                        <!-- Australia -->
-                        <path class="map-path" d="M 800 350 L 810 340 L 820 330 L 830 320 L 840 310 L 850 300 L 860 290 L 870 280 L 880 270 L 890 260 L 900 250 L 910 240 L 920 230 L 930 220 L 940 210 L 950 200 L 960 190 L 970 180 L 990 160 L 1000 150 L 990 140 L 980 130 L 970 120 L 960 110 L 950 100 L 940 90 L 930 80 L 920 70 L 910 60 L 900 50 L 890 40 L 880 30 L 870 20 L 860 10 L 850 0 L 840 10 L 830 20 L 820 30 L 810 40 L 800 50 L 790 60 L 780 70 L 770 80 L 760 90 L 750 100 L 740 110 L 730 120 L 710 140 L 700 150 L 690 160 L 680 170 L 670 180 L 660 190 L 650 200 L 640 210 L 630 220 L 610 240 L 600 250 L 590 260 L 580 270 L 570 280 L 560 290 L 550 300 L 540 310 L 530 320 L 520 330 L 510 340 L 500 350 L 510 360 L 520 370 L 530 380 L 540 390 L 550 400 L 560 410 L 570 420 L 580 430 L 590 440 L 600 450 L 610 460 L 620 470 L 630 480 L 640 490 L 650 500 L 660 490 L 670 480 L 680 470 L 690 460 L 700 450 L 710 440 L 720 430 L 730 420 L 740 410 L 750 400 L 760 390 L 770 380 L 780 370 L 790 360 L 800 350 Z" />
-                        <!-- Antarctica (simplified) -->
-                        <path class="map-path" d="M 300 480 L 700 480 L 650 495 L 350 495 Z" />
+                        <!-- Simplified world map path -->
+                        <path class="map-path" d="M500,5 C223.86,5 0,163.92 0,300 C0,436.08 223.86,500 500,500 C776.14,500 1000,436.08 1000,300 C1000,163.92 776.14,5 500,5 Z" />
+                        <text x="500" y="250" class="map-text">A World of Adventures for Us</text>
                     </svg>
                     <div id="map-markers">
-                        <!-- Markers will be dynamically added here by JavaScript -->
+                        <!-- Markers will be dynamically generated here -->
                     </div>
                 </div>
 
                 <div class="mt-8 p-6 bg-white rounded-xl shadow-md w-full">
-                    <h3 class="text-2xl font-semibold mb-4">Plan a New Adventure!</h3>
+                    <h3 class="text-2xl font-semibold mb-4 text-purple-700">Plan a New Adventure!</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="adventure-city" class="block text-amber-800 text-sm font-bold mb-2">City:</label>
-                            <select id="adventure-city" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
+                            <label for="adventure-city" class="block text-purple-800 text-sm font-bold mb-2">City:</label>
+                            <select id="adventure-city" class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50">
                                 <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
                         <div>
-                            <label for="adventure-note" class="block text-amber-800 text-sm font-bold mb-2">Note:</label>
-                            <input type="text" id="adventure-note" placeholder="E.g., 'Romantic getaway', 'Food tour'" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
+                            <label for="adventure-note" class="block text-purple-800 text-sm font-bold mb-2">Note:</label>
+                            <input type="text" id="adventure-note" placeholder="E.g., 'Romantic getaway', 'Food tour'" class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50">
                         </div>
                     </div>
-                    <button id="add-adventure-btn" class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                    <button id="add-adventure-btn" class="fancy-button teal-gradient mt-6 px-8 py-3 text-lg mx-auto block">
                         Add Adventure to Map
                     </button>
                 </div>
@@ -208,13 +304,13 @@
 
             <!-- Section 2: Our Bucket List -->
             <section id="bucket-list" class="content-section">
-                <h2 class="text-4xl font-bold mb-6">Our Bucket List</h2>
+                <h2 class="text-4xl font-bold mb-6 text-purple-700">Our Bucket List</h2>
                 <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4 flex">
-                        <input type="text" id="bucket-item-input" placeholder="Add a new bucket list item..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50 flex-grow">
-                        <button id="add-bucket-item-btn" class="ml-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add</button>
+                        <input type="text" id="bucket-item-input" placeholder="Add a new bucket list item..." class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50 flex-grow">
+                        <button id="add-bucket-item-btn" class="fancy-button purple-gradient ml-2">Add</button>
                     </div>
-                    <ul id="bucket-list-items" class="divide-y divide-amber-200">
+                    <ul id="bucket-list-items" class="divide-y divide-pink-200">
                         <!-- Bucket list items will be loaded here -->
                     </ul>
                 </div>
@@ -222,34 +318,34 @@
 
             <!-- Section 6: Plan a Date -->
             <section id="date-night" class="content-section">
-                <h2 class="text-4xl font-bold mb-6">Plan a Date</h2>
+                <h2 class="text-4xl font-bold mb-6 text-purple-700">Plan a Date</h2>
                 <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4">
-                        <input type="text" id="date-idea-input" placeholder="Add a date idea..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
-                        <button id="add-date-idea-btn" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Date Idea</button>
+                        <input type="text" id="date-idea-input" placeholder="Add a date idea..." class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50">
+                        <button id="add-date-idea-btn" class="fancy-button indigo-gradient mt-4 w-full">Add Date Idea</button>
                     </div>
-                    <ul id="date-ideas-list" class="divide-y divide-amber-200">
+                    <ul id="date-ideas-list" class="divide-y divide-pink-200">
                         <!-- Date ideas will be loaded here -->
                     </ul>
-                    <button id="pick-date-btn" class="mt-6 bg-red-400 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                    <button id="pick-date-btn" class="fancy-button rose-gradient mt-6 w-full">
                         Pick a Date Idea!
                     </button>
-                    <p id="picked-date-idea" class="mt-4 text-xl font-semibold text-center text-amber-800"></p>
+                    <p id="picked-date-idea" class="mt-4 text-xl font-semibold text-center text-purple-800"></p>
                 </div>
             </section>
 
             <!-- Section 7: Compliment Jar -->
             <section id="compliments" class="content-section">
-                <h2 class="text-4xl font-bold mb-6">Compliment Jar</h2>
+                <h2 class="text-4xl font-bold mb-6 text-purple-700">Compliment Jar</h2>
                 <div class="bg-white p-8 rounded-xl shadow-md w-full">
                     <div class="mb-4">
-                        <textarea id="compliment-input" placeholder="Write a sweet compliment..." rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50"></textarea>
-                        <button id="add-compliment-btn" class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Compliment</button>
+                        <textarea id="compliment-input" placeholder="Write a sweet compliment..." rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50"></textarea>
+                        <button id="add-compliment-btn" class="fancy-button green-gradient mt-4 w-full">Add Compliment</button>
                     </div>
-                    <button id="get-compliment-btn" class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                    <button id="get-compliment-btn" class="fancy-button purple-gradient mt-6 w-full">
                         Get a Compliment!
                     </button>
-                    <p id="display-compliment" class="mt-4 text-xl font-semibold text-center text-amber-800 italic"></p>
+                    <p id="display-compliment" class="mt-4 text-xl font-semibold text-center text-purple-800 italic"></p>
                 </div>
             </section>
         </main>
@@ -258,13 +354,13 @@
     <!-- Modal for Map Marker Details -->
     <div id="marker-detail-modal" class="modal-backdrop hidden">
         <div class="modal-content">
-            <h3 id="modal-city-name" class="text-2xl font-bold mb-4"></h3>
-            <label for="modal-note-input" class="block text-amber-800 text-sm font-bold mb-2">Note:</label>
-            <input type="text" id="modal-note-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50 mb-4">
+            <h3 id="modal-city-name" class="text-2xl font-bold mb-4 text-purple-700"></h3>
+            <label for="modal-note-input" class="block text-purple-800 text-sm font-bold mb-2">Note:</label>
+            <input type="text" id="modal-note-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-purple-700 leading-tight focus:outline-none focus:shadow-outline bg-pink-50 mb-4">
             <div class="flex justify-around">
-                <button id="modal-save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Save Changes</button>
-                <button id="modal-delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Delete Adventure</button>
-                <button id="modal-close-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Close</button>
+                <button id="modal-save-btn" class="fancy-button green-gradient py-2 px-6">Save Changes</button>
+                <button id="modal-delete-btn" class="fancy-button red-gradient py-2 px-6">Delete Adventure</button>
+                <button id="modal-close-btn" class="fancy-button gray-solid py-2 px-6">Close</button>
             </div>
         </div>
     </div>
@@ -272,11 +368,11 @@
     <!-- Confirmation Modal for Deletion -->
     <div id="confirm-delete-modal" class="modal-backdrop hidden">
         <div class="modal-content">
-            <h3 class="text-2xl font-bold mb-4">Confirm Deletion</h3>
-            <p class="mb-6">Are you sure you want to delete this adventure?</p>
+            <h3 class="text-2xl font-bold mb-4 text-purple-700">Confirm Deletion</h3>
+            <p class="mb-6 text-purple-800">Are you sure you want to delete this adventure?</p>
             <div class="flex justify-around">
-                <button id="confirm-delete-yes" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Yes, Delete</button>
-                <button id="confirm-delete-no" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">No, Cancel</button>
+                <button id="confirm-delete-yes" class="fancy-button red-gradient py-2 px-6">Yes, Delete</button>
+                <button id="confirm-delete-no" class="fancy-button gray-solid py-2 px-6">No, Cancel</button>
             </div>
         </div>
     </div>
@@ -386,9 +482,9 @@
 
         async function updateDocument(collectionName, docId, data) {
             if (!isAuthReady) {
-                console.error("Firebase not ready. Cannot update document.");
-                return;
-            }
+                    console.error("Firebase not ready. Cannot update document.");
+                    return;
+                }
             try {
                 const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
                 await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() }); // Use serverTimestamp
@@ -400,9 +496,9 @@
 
         async function deleteDocument(collectionName, docId) {
             if (!isAuthReady) {
-                console.error("Firebase not ready. Cannot delete document.");
-                return;
-            }
+                    console.error("Firebase not ready. Cannot delete document.");
+                    return;
+                }
             try {
                 const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
                 await deleteDoc(docRef);
@@ -476,61 +572,17 @@
 
         // --- Section 1: Reasons I Love You ---
         const reasons = [
-            "Your infectious laugh",
-            "Your kindness to everyone",
-            "The way you always know how to make me smile",
-            "Your unwavering support",
-            "Your adventurous spirit",
-            "Your brilliant mind",
-            "The comfort of your embrace",
-            "How you make ordinary moments extraordinary",
-            "Your passion for life",
-            "Your beautiful eyes",
-            "Your gentle touch",
-            "Your incredible strength",
-            "Your thoughtful gestures",
-            "Your unique perspective on the world",
-            "The way you listen",
-            "Your ability to forgive",
-            "Your warmth and compassion",
-            "Your sense of humor",
-            "Your honesty and integrity",
-            "Your creativity",
-            "Your resilience",
-            "Your calming presence",
-            "Your ability to make me feel safe",
-            "Your dreams and aspirations",
-            "Your zest for trying new things",
-            "Your patience",
+            "Your comforting nature",
+            "You are understanding",
+            "The efforts you take each time after I am upset",
+            "The efforts you take for me",
+            "You are very sweet as a person to talk to.",
+            "You are handsome!(wink emoji)",
+            "Coz you ask me for snaps everyday",
+            "Coz you remind e to do french",
+            "The way you eagerly wait to have conversation with me",
+            "Your patience (Hehe)",
             "Your understanding heart",
-            "Your playful nature",
-            "Your dedication to what you believe in",
-            "Your courage",
-            "Your quiet moments of reflection",
-            "Your vibrant energy",
-            "Your comforting words",
-            "Your shared silences",
-            "Your unique quirks that make you, you",
-            "Your ability to make me a better person",
-            "Your love for animals",
-            "Your love for nature",
-            "Your favorite song",
-            "Your favorite book",
-            "Your favorite movie",
-            "Your favorite food",
-            "Your favorite color",
-            "Your favorite season",
-            "Your favorite memory with me",
-            "Your smile",
-            "Your hugs",
-            "Your kisses",
-            "Your voice",
-            "Your wisdom",
-            "Your grace",
-            "Your empathy",
-            "Your generosity",
-            "Your spirit",
-            "Your light",
             "Your everything."
         ];
         const reasonText = document.getElementById('reason-text');
@@ -563,11 +615,11 @@
             items.sort((a, b) => a.completed - b.completed || (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0)); // Sort by completion and then creation
             items.forEach(item => {
                 const li = document.createElement('li');
-                li.className = `flex items-center justify-between p-3 rounded-lg transition-colors ${item.completed ? 'bg-green-100 text-green-800 line-through' : 'bg-white hover:bg-amber-50'}`;
+                li.className = `flex items-center justify-between p-3 rounded-lg transition-colors ${item.completed ? 'bg-purple-100 text-purple-800 line-through' : 'bg-white hover:bg-pink-50'}`;
                 li.innerHTML = `
                     <span class="flex-grow text-lg">${item.item}</span>
                     <div class="flex items-center space-x-2">
-                        <input type="checkbox" data-id="${item.id}" ${item.completed ? 'checked' : ''} class="bucket-checkbox form-checkbox h-5 w-5 text-green-600 rounded">
+                        <input type="checkbox" data-id="${item.id}" ${item.completed ? 'checked' : ''} class="bucket-checkbox form-checkbox h-5 w-5 text-purple-600 rounded">
                         <button data-id="${item.id}" class="delete-bucket-item text-red-500 hover:text-red-700">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
@@ -979,7 +1031,7 @@
             dateIdeasList.innerHTML = '';
             ideas.forEach(idea => {
                 const li = document.createElement('li');
-                li.className = 'flex items-center justify-between p-3 rounded-lg bg-white hover:bg-amber-50 transition-colors';
+                li.className = 'flex items-center justify-between p-3 rounded-lg bg-white hover:bg-pink-50 transition-colors';
                 li.innerHTML = `
                     <span class="flex-grow text-lg">${idea.idea}</span>
                     <button data-id="${idea.id}" class="delete-date-idea-item text-red-500 hover:text-red-700">
