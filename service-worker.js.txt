@@ -1,0 +1,73 @@
+const CACHE_NAME = 'romantic-app-cache-v2'; // Increment cache version for updates
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/service-worker.js',
+  // IMPORTANT: Ensure these icon files exist in your root directory
+  '/icon-72x72.png',
+  '/icon-96x96.png',
+  '/icon-128x128.png',
+  '/icon-144x144.png',
+  '/icon-152x152.png',
+  '/icon-192x192.png',
+  '/icon-384x384.png',
+  '/icon-512x512.png',
+  // External CDN resources (optional, but good for offline)
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap',
+  'https://unpkg.com/react@18/umd/react.development.js',
+  'https://unpkg.com/react-dom@18/umd/react-dom.development.js',
+  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js',
+  'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'
+];
+
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Installing...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Service Worker: Caching app shell');
+        return cache.addAll(urlsToCache);
+      })
+      .catch(error => {
+        console.error('Service Worker: Cache addAll failed', error);
+      })
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+        // No cache hit - fetch from network
+        return fetch(event.request).catch(error => {
+            console.error('Service Worker: Fetch failed for', event.request.url, error);
+            // You can return a fallback page here for offline scenarios
+            // return caches.match('/offline.html');
+        });
+      })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activating...');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: Deleting old cache', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
