@@ -4,295 +4,959 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Partner Sync</title>
-
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Copy Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-      }
-      h1 {
-        font-family: 'Playfair Display', serif;
-      }
-    </style>
-
-    <!-- React and ReactDOM CDNs -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Manually defined Firebase config for GitHub Pages deployment
-        // This configuration is specific to YOUR Firebase project.
-        const firebaseConfig = {
-            apiKey: "AIzaSyB9_fYA3tF4D18lJ5QfjvolG0BWK2epa3A",
-            authDomain: "partnersyncapp.firebaseapp.com",
-            projectId: "partnersyncapp",
-            storageBucket: "partnersyncapp.firebasestorage.app",
-            messagingSenderId: "400603607241",
-            appId: "1:400603607241:web:5b47581025c7723202dd18"
-        };
-
-        // Log the config to console for debugging
-        console.log("Firebase Config loaded:", firebaseConfig);
-
-        // Make Firebase functions and config globally available for the React component
-        window.firebase = {
-            initializeApp,
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            onAuthStateChanged,
-            getFirestore,
-            collection,
-            addDoc,
-            onSnapshot,
-            query,
-            orderBy,
-            serverTimestamp,
-            config: firebaseConfig // Expose the config directly
-        };
-    </script>
-</head>
-<body>
-    <div id="root"></div>
-
-    <!-- Your React App Component -->
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, config: firebaseConfigFromWindow } = window.firebase;
-
-        function App() {
-          // Use the firebaseConfig directly from the window.firebase.config
-          const firebaseConfig = firebaseConfigFromWindow;
-          const appId = firebaseConfig.projectId; // Use projectId as appId for consistency
-
-          const [db, setDb] = useState(null);
-          const [auth, setAuth] = useState(null);
-          const [userId, setUserId] = useState('');
-          const [memories, setMemories] = useState([]);
-          const [newMemory, setNewMemory] = useState('');
-          const [loading, setLoading] = useState(true);
-          const [error, setError] = useState(null);
-          const [isAuthReady, setIsAuthReady] = useState(false);
-          const [currentDateIdea, setCurrentDateIdea] = useState('');
-
-          // Predefined romantic date ideas
-          const dateIdeas = [
-            "Have a romantic picnic in the park.",
-            "Cook a special dinner together at home.",
-            "Go stargazing and talk about your dreams.",
-            "Have a themed movie night with cozy blankets.",
-            "Visit a local art gallery or museum.",
-            "Go for a long walk and discover new places.",
-            "Have a board game night with your favorite snacks.",
-            "Create a shared playlist of your favorite songs.",
-            "Write love letters to each other.",
-            "Plan a surprise day trip to a nearby town.",
-            "Have a relaxing spa night at home.",
-            "Go on a dessert crawl, trying treats from different bakeries.",
-            "Volunteer together for a cause you both care about.",
-            "Have a 'yes' day where you say yes to all reasonable requests.",
-            "Build a fort and watch a movie inside.",
-            "Try a new hobby or class together (e.g., pottery, dance).",
-            "Have a photoshoot together in a scenic location.",
-            "Go to a live music show or concert.",
-            "Recreate your first date.",
-            "Have a DIY cocktail/mocktail making session."
-          ];
-
-          useEffect(() => {
-            // Initialize Firebase services
-            try {
-              console.log("Initializing Firebase with config:", firebaseConfig); // Debugging log
-              const app = initializeApp(firebaseConfig);
-              const firestore = getFirestore(app);
-              const authentication = getAuth(app);
-              setDb(firestore);
-              setAuth(authentication);
-
-              // Listen for authentication state changes
-              const unsubscribeAuth = onAuthStateChanged(authentication, async (user) => {
-                if (user) {
-                  setUserId(user.uid);
-                  setIsAuthReady(true);
-                  console.log("User authenticated:", user.uid);
-                } else {
-                  // Sign in anonymously if no user is found
-                  try {
-                    await signInAnonymously(authentication);
-                    console.log("Signed in anonymously.");
-                  } catch (e) {
-                    console.error("Error during anonymous sign-in:", e);
-                    setError("Failed to authenticate. Please try again.");
-                    setLoading(false);
-                  }
-                }
-                setLoading(false); // Authentication check is complete
-              });
-
-              return () => unsubscribeAuth(); // Clean up auth listener on unmount
-            } catch (e) {
-              console.error("Error initializing Firebase:", e);
-              setError("Failed to initialize the app. Check Firebase config.");
-              setLoading(false);
-            }
-          }, []); // Run once on component mount
-
-          useEffect(() => {
-            // Fetch memories only when db and userId are ready
-            if (db && isAuthReady) {
-              const memoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/memories`);
-              // Order memories by timestamp, newest first
-              const q = query(memoriesCollectionRef, orderBy('timestamp', 'desc'));
-
-              const unsubscribe = onSnapshot(q, (snapshot) => {
-                const fetchedMemories = snapshot.docs.map(doc => ({
-                  id: doc.id,
-                  ...doc.data()
-                }));
-                setMemories(fetchedMemories);
-                console.log("Memories updated:", fetchedMemories);
-              }, (e) => {
-                console.error("Error fetching memories:", e);
-                setError("Failed to load memories.");
-              });
-
-              return () => unsubscribe(); // Clean up snapshot listener on unmount
-            }
-          }, [db, isAuthReady, appId]); // Re-run when db, isAuthReady, or appId changes
-
-          const handleAddMemory = async () => {
-            if (newMemory.trim() === '' || !db || !userId) {
-              console.warn("Cannot add empty memory or Firebase not ready.");
-              return;
-            }
-
-            try {
-              const memoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/memories`);
-              await addDoc(memoriesCollectionRef, {
-                text: newMemory,
-                senderId: userId,
-                timestamp: serverTimestamp(), // Firestore server timestamp
-              });
-              setNewMemory(''); // Clear input after sending
-              console.log("Message sent successfully.");
-            } catch (e) {
-              console.error("Error adding document: ", e);
-              setError("Failed to send message.");
-            }
-          };
-
-          const generateDateIdea = () => {
-            const randomIndex = Math.floor(Math.random() * dateIdeas.length);
-            setCurrentDateIdea(dateIdeas[randomIndex]);
-          };
-
-          if (loading) {
-            return (
-              <div className="flex items-center justify-center min-h-screen bg-pink-50">
-                <div className="text-lg font-semibold text-pink-700">Loading Partner Sync...</div>
-              </div>
-            );
-          }
-
-          if (error) {
-            return (
-              <div className="flex items-center justify-center min-h-screen bg-red-100 text-red-700 p-4 rounded-lg shadow-md">
-                <p>Error: {error}</p>
-              </div>
-            );
-          }
-
-          return (
-            <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col items-center p-4 font-inter text-gray-800">
-              <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-lg mt-8 transform transition-all duration-300 hover:scale-[1.01]">
-                <h1 className="text-4xl font-extrabold text-center text-pink-700 mb-8 font-serif">Partner Sync</h1>
-
-                <div className="mb-6 text-sm text-gray-600 text-center">
-                  Your unique ID: <span className="font-mono bg-pink-50 p-1 rounded-md text-pink-600">{userId}</span>
-                </div>
-
-                {/* Date Idea Generator Section */}
-                <div className="bg-pink-50 p-6 rounded-2xl shadow-inner mb-8 border border-pink-200">
-                  <h2 className="text-2xl font-bold text-pink-600 mb-4 text-center">Date Idea Generator</h2>
-                  <p className="text-center text-lg mb-4 italic">
-                    {currentDateIdea || "Click below for a romantic date idea!"}
-                  </p>
-                  <button
-                    onClick={generateDateIdea}
-                    className="w-full bg-pink-500 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-pink-600 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-400"
-                  >
-                    Get a New Date Idea
-                  </button>
-                </div>
-
-                {/* Memory Jar Section */}
-                <div className="bg-red-50 p-6 rounded-2xl shadow-inner mb-8 border border-red-200">
-                  <h2 className="text-2xl font-bold text-red-600 mb-4 text-center">Our Memory Jar</h2>
-                  <div className="memory-list h-64 overflow-y-auto bg-white p-4 rounded-lg mb-4 border border-gray-200 shadow-inner">
-                    {memories.length === 0 ? (
-                      <p className="text-center text-gray-500 italic">No memories yet. Add your first special moment!</p>
-                    ) : (
-                      memories.map((memory) => (
-                        <div
-                          key={memory.id}
-                          className={`flex mb-3 ${memory.senderId === userId ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-[80%] p-3 rounded-xl shadow-sm ${
-                              memory.senderId === userId
-                                ? 'bg-red-300 text-red-900 rounded-br-none'
-                                : 'bg-pink-200 text-pink-900 rounded-bl-none'
-                            }`}
-                          >
-                            <p className="text-sm break-words">{memory.text}</p>
-                            <span className="block text-xs mt-1 text-gray-700 opacity-80">
-                              {memory.senderId === userId ? 'You' : `Partner (${memory.senderId.substring(0, 4)}...)`}
-                              {memory.timestamp && ` • ${new Date(memory.timestamp.toDate()).toLocaleDateString()} ${new Date(memory.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      className="flex-grow p-3 border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
-                      placeholder="Add a special memory..."
-                      value={newMemory}
-                      onChange={(e) => setNewMemory(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddMemory();
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={handleAddMemory}
-                      className="bg-red-500 text-white px-5 py-3 rounded-lg shadow-lg hover:bg-red-600 transition-all duration-200 ease-in-out transform hover:scale-105"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Using an image from GitHub as background */
+            background-image: url('https://github.com/AryaASinhaS/sync-app-pwa/blob/main/Main_BG.png?raw=true'); /* REPLACE THIS WITH YOUR ACTUAL GITHUB IMAGE URL */
+            background-size: cover; /* Cover the entire background */
+            background-position: center; /* Center the image */
+            background-repeat: no-repeat; /* Do not repeat the image */
+            background-attachment: fixed; /* Keep background fixed while scrolling */
+            color: #78350f; /* Ensuring text color remains readable */
         }
 
-        // Render the React App component
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        /* Removed gradientShift animation as it's not applicable to image background */
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Custom styles for animations and specific elements */
+        .content-section {
+            display: none;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        .content-section.active {
+            display: block; /* Ensure it's block when active */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .nav-link.active {
+            background-color: #fde68a; /* A soft yellow */
+            color: #78350f; /* A warm brown */
+        }
+        
+        /* Styles for the map */
+        .map-container {
+            position: relative;
+            max-width: 800px;
+            margin: auto;
+            border: 2px solid #10b981; /* Border to define map area */
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensure markers stay within bounds */
+        }
+        .map-svg {
+            width: 100%;
+            height: auto;
+            /* Set world map image as background */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Whole_world_-_land_and_oceans.jpg/800px-Whole_world_-_land_and_oceans.jpg');
+            background-size: cover; /* Cover the entire area */
+            background-position: center; /* Center the image */
+            background-repeat: no-repeat; /* Do not repeat the image */
+            border-radius: 0.5rem;
+            display: block; /* Remove extra space below SVG */
+        }
+        .map-path {
+            fill: none; /* Make land paths transparent */
+            stroke: none; /* Remove stroke to let background define borders */
+        }
+        .map-text {
+            font-size: 20px;
+            text-anchor: middle;
+            fill: #047857;
+        }
+
+        .map-marker {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #ef4444; /* Red */
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: transform 0.2s;
+            transform: translate(-50%, -50%); /* Center marker on coordinates */
+        }
+        .map-marker:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+        
+        /* Custom modal for popups */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            width: 500px;
+            text-align: center;
+            animation: fadeIn 0.3s;
+        }
+    </style>
+</head>
+<body class="text-amber-900">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-amber-100 p-4 md:p-6 shadow-lg">
+            <h1 class="text-4xl text-amber-900 mb-8 text-center">❤️</h1>
+            <nav id="main-nav" class="space-y-2">
+                <a href="#reasons" class="nav-link block p-3 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Reasons I Love You</a>
+                <a href="#map" class="nav-link block p-3 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Adventure Awaits</a>
+                <a href="#bucket-list" class="nav-link block p-3 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Our Bucket List</a>
+                <a href="#date-night" class="nav-link block p-3 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Plan a Date</a>
+                <a href="#compliments" class="nav-link block p-3 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Compliment Jar</a>
+            </nav>
+            <!-- User ID section removed -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10">
+            <!-- Section 1: Reasons I Love You -->
+            <section id="reasons" class="content-section">
+                <h2 class="text-4xl font-bold mb-6">Reasons I Love You</h2>
+                <div class="bg-white p-8 rounded-xl shadow-md text-center min-h-[200px] flex flex-col justify-center items-center">
+                    <p id="reason-text" class="text-2xl text-amber-800 italic transition-opacity duration-500">Click the heart to see a reason...</p>
+                </div>
+                <div class="text-center mt-8">
+                    <button id="reason-btn" class="bg-red-500 text-white p-4 rounded-full shadow-lg hover:bg-red-600 transition-transform transform hover:scale-110">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section 3: Adventure Awaits -->
+            <section id="map" class="content-section">
+                <h2 class="text-4xl font-bold mb-6">Adventure Awaits</h2>
+                <div class="map-container">
+                    <!-- Detailed World Map SVG -->
+                    <svg viewBox="0 0 1000 500" class="map-svg">
+                        <!-- Paths for continents and major landmasses (now transparent, background image provides the map) -->
+                        <!-- North America -->
+                        <path class="map-path" d="M 170 150 L 180 140 L 190 130 L 200 120 L 210 110 L 220 100 L 230 90 L 240 80 L 250 70 L 260 60 L 270 50 L 280 40 L 290 30 L 300 20 L 310 10 L 320 0 L 330 10 L 340 20 L 350 30 L 360 40 L 370 50 L 380 60 L 390 70 L 400 80 L 410 90 L 420 100 L 430 110 L 440 120 L 450 130 L 460 140 L 470 150 L 480 160 L 490 170 L 500 180 L 510 190 L 520 200 L 530 210 L 540 220 L 550 230 L 560 240 L 570 250 L 580 260 L 590 270 L 600 280 L 610 290 L 620 300 L 630 310 L 640 320 L 650 330 L 660 340 L 670 350 L 680 360 L 690 370 L 700 380 L 710 390 L 720 400 L 730 410 L 740 420 L 750 430 L 760 440 L 770 450 L 780 460 L 790 470 L 800 480 L 810 490 L 820 500 L 830 490 L 840 480 L 850 470 L 860 460 L 870 450 L 880 440 L 890 430 L 900 420 L 910 410 L 920 400 L 930 390 L 940 380 L 950 370 L 960 360 L 970 350 L 980 340 L 990 330 L 1000 320 L 990 310 L 980 300 L 970 290 L 960 280 L 950 270 L 940 260 L 930 250 L 920 240 L 910 230 L 900 220 L 890 210 L 880 200 L 870 190 L 860 180 L 850 170 L 840 160 L 830 150 L 820 140 L 810 130 L 800 120 L 790 110 L 780 100 L 770 90 L 760 80 L 750 70 L 740 60 L 730 50 L 720 40 L 710 30 L 700 20 L 690 10 L 680 0 L 670 10 L 660 20 L 650 30 L 640 40 L 630 50 L 620 60 L 610 70 L 600 80 L 590 90 L 580 100 L 570 110 L 560 120 L 550 130 L 540 140 L 530 150 L 520 160 L 510 170 L 500 180 L 490 190 L 480 200 L 470 210 L 460 220 L 450 230 L 440 240 L 430 250 L 420 260 L 410 270 L 400 280 L 390 290 L 380 300 L 370 310 L 360 320 L 350 330 L 340 340 L 330 350 L 320 360 L 310 370 L 300 380 L 290 390 L 280 400 L 270 410 L 260 420 L 250 430 L 240 440 L 230 450 L 220 460 L 210 470 L 200 480 L 190 490 L 180 500 L 170 490 L 160 480 L 150 470 L 140 460 L 130 450 L 120 440 L 110 430 L 100 420 L 90 410 L 80 400 L 70 390 L 60 380 L 50 370 L 40 360 L 30 350 L 20 340 L 10 330 L 0 320 L 10 310 L 20 300 L 30 290 L 40 280 L 50 270 L 60 260 L 70 250 L 80 240 L 90 230 L 100 220 L 110 210 L 120 200 L 130 190 L 140 180 L 150 170 L 160 160 L 170 150 Z" />
+                        <!-- South America -->
+                        <path class="map-path" d="M 280 350 L 290 340 L 300 330 L 310 320 L 320 310 L 330 300 L 340 290 L 350 280 L 360 270 L 370 260 L 380 250 L 390 240 L 400 230 L 410 220 L 420 210 L 430 200 L 440 190 L 450 180 L 460 170 L 470 160 L 480 150 L 490 140 L 500 130 L 510 120 L 520 110 L 530 100 L 540 90 L 550 80 L 560 70 L 570 60 L 580 50 L 590 40 L 600 30 L 610 20 L 620 10 L 630 0 L 640 10 L 650 20 L 660 30 L 670 40 L 680 50 L 690 60 L 700 70 L 710 80 L 720 90 L 730 100 L 740 110 L 750 120 L 760 130 L 770 140 L 780 150 L 790 160 L 800 170 L 810 180 L 820 190 L 830 200 L 840 210 L 850 220 L 860 230 L 870 240 L 880 250 L 890 260 L 900 270 L 910 280 L 920 290 L 930 300 L 940 310 L 950 320 L 960 330 L 970 340 L 980 350 L 990 360 L 1000 370 L 990 380 L 980 390 L 970 400 L 960 410 L 950 420 L 940 430 L 930 440 L 920 450 L 910 460 L 900 470 L 890 480 L 880 490 L 870 500 L 860 490 L 850 480 L 840 470 L 830 460 L 820 450 L 810 440 L 800 430 L 790 420 L 780 410 L 770 400 L 760 390 L 750 380 L 740 370 L 730 360 L 720 350 L 710 340 L 700 330 L 690 320 L 680 310 L 670 300 L 660 290 L 650 280 L 640 270 L 630 260 L 620 250 L 610 240 L 600 230 L 590 220 L 580 210 L 570 200 L 560 190 L 550 180 L 540 170 L 530 160 L 520 150 L 510 140 L 500 130 L 490 120 L 480 110 L 470 100 L 460 90 L 450 80 L 440 70 L 430 60 L 420 50 L 410 40 L 400 30 L 390 20 L 380 10 L 370 0 L 360 10 L 350 20 L 340 30 L 330 40 L 320 50 L 310 60 L 300 70 L 290 80 L 280 90 L 270 100 L 260 110 L 250 120 L 240 130 L 230 140 L 220 150 L 210 160 L 200 170 L 190 180 L 180 190 L 170 200 L 160 210 L 150 220 L 140 230 L 130 240 L 120 250 L 110 260 L 100 270 L 90 280 L 80 290 L 70 300 L 60 310 L 50 320 L 40 330 L 30 340 L 20 350 L 10 360 L 0 370 L 10 380 L 20 390 L 30 400 L 40 410 L 50 420 L 60 430 L 70 440 L 80 450 L 90 460 L 100 470 L 110 480 L 120 490 L 130 500 L 140 490 L 150 480 L 160 470 L 170 460 L 180 450 L 190 440 L 200 430 L 210 420 L 220 410 L 230 400 L 240 390 L 250 380 L 260 370 L 270 360 L 280 350 Z" />
+                        <!-- Europe -->
+                        <path class="map-path" d="M 500 100 L 510 90 L 520 80 L 530 70 L 540 60 L 550 50 L 560 40 L 570 30 L 580 20 L 590 10 L 600 0 L 610 10 L 620 20 L 630 30 L 640 40 L 650 50 L 660 60 L 670 70 L 680 80 L 690 90 L 700 100 L 710 110 L 720 120 L 730 130 L 740 140 L 750 150 L 760 160 L 770 170 L 780 180 L 790 190 L 800 200 L 810 210 L 820 220 L 830 230 L 840 240 L 850 250 L 860 260 L 870 270 L 880 280 L 890 290 L 900 300 L 910 310 L 920 320 L 930 330 L 940 340 L 950 350 L 960 360 L 970 370 L 980 380 L 990 390 L 1000 400 L 990 410 L 980 420 L 970 430 L 960 440 L 950 450 L 940 460 L 930 470 L 920 480 L 910 490 L 900 500 L 890 490 L 880 480 L 870 470 L 860 460 L 850 450 L 840 440 L 830 430 L 820 420 L 810 410 L 800 400 L 790 390 L 780 380 L 770 370 L 760 360 L 750 350 L 740 340 L 730 330 L 720 320 L 710 310 L 700 300 L 690 290 L 680 280 L 670 270 L 660 260 L 650 250 L 640 240 L 630 230 L 620 220 L 610 210 L 600 200 L 590 190 L 580 180 L 570 170 L 560 160 L 550 150 L 540 140 L 530 130 L 520 120 L 510 110 L 500 100 Z" />
+                        <!-- Africa -->
+                        <path class="map-path" d="M 500 250 L 510 240 L 520 230 L 530 220 L 540 210 L 550 200 L 560 190 L 570 180 L 580 170 L 590 160 L 600 150 L 610 140 L 620 130 L 630 120 L 640 110 L 650 100 L 660 90 L 670 80 L 680 70 L 690 60 L 700 50 L 710 40 L 720 30 L 730 20 L 740 10 L 750 0 L 760 10 L 770 20 L 780 30 L 790 40 L 800 50 L 810 60 L 820 70 L 830 80 L 840 90 L 850 100 L 860 110 L 870 120 L 880 130 L 890 140 L 900 150 L 910 160 L 920 170 L 930 180 L 940 190 L 950 200 L 960 210 L 970 220 L 980 230 L 990 240 L 1000 250 L 990 260 L 980 270 L 970 280 L 960 290 L 950 300 L 940 310 L 930 320 L 920 330 L 910 340 L 900 350 L 890 360 L 880 370 L 870 380 L 860 390 L 850 400 L 840 410 L 830 420 L 820 430 L 810 440 L 800 450 L 790 460 L 780 470 L 770 480 L 760 490 L 750 500 L 740 490 L 730 480 L 720 470 L 710 460 L 700 450 L 690 440 L 680 430 L 670 420 L 660 410 L 650 400 L 640 390 L 630 380 L 620 370 L 610 360 L 600 350 L 590 340 L 580 330 L 570 320 L 560 310 L 550 300 L 540 290 L 530 280 L 520 270 L 510 260 L 500 250 Z" />
+                        <!-- Asia -->
+                        <path class="map-path" d="M 700 150 L 710 140 L 720 130 L 730 120 L 740 110 L 750 100 L 760 90 L 770 80 L 780 70 L 790 60 L 800 50 L 810 40 L 820 30 L 830 20 L 840 10 L 850 0 L 860 10 L 870 20 L 880 30 L 890 40 L 900 50 L 910 60 L 920 70 L 930 80 L 940 90 L 950 100 L 960 110 L 970 120 L 980 130 L 990 140 L 1000 150 L 990 160 L 980 170 L 970 180 L 960 190 L 950 200 L 940 210 L 930 220 L 920 230 L 910 240 L 900 250 L 890 260 L 880 270 L 870 280 L 860 290 L 850 300 L 840 310 L 830 320 L 820 330 L 810 340 L 800 350 L 790 360 L 780 370 L 770 380 L 760 390 L 750 400 L 740 410 L 730 420 L 710 440 L 700 450 L 690 440 L 680 430 L 670 420 L 660 410 L 650 400 L 640 390 L 630 380 L 620 370 L 610 360 L 600 350 L 590 340 L 580 330 L 570 320 L 560 310 L 550 300 L 540 290 L 530 280 L 520 270 L 510 260 L 500 250 L 490 240 L 480 230 L 470 220 L 460 210 L 450 200 L 440 190 L 430 180 L 420 170 L 410 160 L 400 150 L 390 140 L 380 130 L 370 120 L 360 110 L 350 100 L 340 90 L 330 80 L 320 70 L 310 60 L 300 50 L 290 40 L 280 30 L 270 20 L 260 10 L 250 0 L 240 10 L 230 20 L 220 30 L 210 40 L 200 50 L 190 60 L 180 70 L 170 80 L 160 90 L 150 100 L 140 110 L 130 120 L 120 130 L 110 140 L 100 150 L 90 160 L 80 170 L 70 180 L 60 190 L 50 200 L 40 210 L 30 220 L 20 230 L 10 240 L 0 250 L 10 260 L 20 270 L 30 280 L 40 290 L 50 300 L 60 310 L 70 320 L 80 330 L 90 340 L 100 350 L 110 360 L 120 370 L 130 380 L 140 390 L 150 400 L 160 410 L 170 420 L 180 430 L 190 440 L 200 450 L 210 460 L 220 470 L 230 480 L 240 490 L 250 500 L 260 490 L 270 480 L 280 470 L 290 460 L 300 450 L 310 440 L 320 430 L 330 420 L 340 410 L 350 400 L 360 390 L 370 380 L 380 370 L 390 360 L 400 350 L 410 340 L 420 330 L 430 320 L 440 310 L 450 300 L 460 290 L 470 280 L 480 270 L 490 260 L 500 250 Z" />
+                        <!-- Australia -->
+                        <path class="map-path" d="M 800 350 L 810 340 L 820 330 L 830 320 L 840 310 L 850 300 L 860 290 L 870 280 L 880 270 L 890 260 L 900 250 L 910 240 L 920 230 L 930 220 L 940 210 L 950 200 L 960 190 L 970 180 L 990 160 L 1000 150 L 990 140 L 980 130 L 970 120 L 960 110 L 950 100 L 940 90 L 930 80 L 920 70 L 910 60 L 900 50 L 890 40 L 880 30 L 870 20 L 860 10 L 850 0 L 840 10 L 830 20 L 820 30 L 810 40 L 800 50 L 790 60 L 780 70 L 770 80 L 760 90 L 750 100 L 740 110 L 730 120 L 710 140 L 700 150 L 690 160 L 680 170 L 670 180 L 660 190 L 650 200 L 640 210 L 630 220 L 620 230 L 610 240 L 600 250 L 590 260 L 580 270 L 570 280 L 560 290 L 550 300 L 540 310 L 530 320 L 520 330 L 510 340 L 500 350 L 510 360 L 520 370 L 530 380 L 540 390 L 550 400 L 560 410 L 570 420 L 580 430 L 590 440 L 600 450 L 610 460 L 620 470 L 630 480 L 640 490 L 650 500 L 660 490 L 670 480 L 680 470 L 690 460 L 700 450 L 710 440 L 720 430 L 730 420 L 740 410 L 750 400 L 760 390 L 770 380 L 780 370 L 790 360 L 800 350 Z" />
+                        <!-- Antarctica (simplified) -->
+                        <path class="map-path" d="M 300 480 L 700 480 L 650 495 L 350 495 Z" />
+                    </svg>
+                    <div id="map-markers">
+                        <!-- Markers will be dynamically added here by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-white rounded-xl shadow-md">
+                    <h3 class="text-2xl font-semibold mb-4">Plan a New Adventure!</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="adventure-city" class="block text-amber-800 text-sm font-bold mb-2">City:</label>
+                            <select id="adventure-city" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="adventure-note" class="block text-amber-800 text-sm font-bold mb-2">Note:</label>
+                            <input type="text" id="adventure-note" placeholder="E.g., 'Romantic getaway', 'Food tour'" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
+                        </div>
+                    </div>
+                    <button id="add-adventure-btn" class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                        Add Adventure to Map
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section 2: Our Bucket List -->
+            <section id="bucket-list" class="content-section">
+                <h2 class="text-4xl font-bold mb-6">Our Bucket List</h2>
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <div class="mb-4 flex">
+                        <input type="text" id="bucket-item-input" placeholder="Add a new bucket list item..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50 flex-grow">
+                        <button id="add-bucket-item-btn" class="ml-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add</button>
+                    </div>
+                    <ul id="bucket-list-items" class="divide-y divide-amber-200">
+                        <!-- Bucket list items will be loaded here -->
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 6: Plan a Date -->
+            <section id="date-night" class="content-section">
+                <h2 class="text-4xl font-bold mb-6">Plan a Date</h2>
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <div class="mb-4">
+                        <input type="text" id="date-idea-input" placeholder="Add a date idea..." class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50">
+                        <button id="add-date-idea-btn" class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Date Idea</button>
+                    </div>
+                    <ul id="date-ideas-list" class="divide-y divide-amber-200">
+                        <!-- Date ideas will be loaded here -->
+                    </ul>
+                    <button id="pick-date-btn" class="mt-6 bg-red-400 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                        Pick a Date Idea!
+                    </button>
+                    <p id="picked-date-idea" class="mt-4 text-xl font-semibold text-center text-amber-800"></p>
+                </div>
+            </section>
+
+            <!-- Section 7: Compliment Jar -->
+            <section id="compliments" class="content-section">
+                <h2 class="text-4xl font-bold mb-6">Compliment Jar</h2>
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <div class="mb-4">
+                        <textarea id="compliment-input" placeholder="Write a sweet compliment..." rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50"></textarea>
+                        <button id="add-compliment-btn" class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Add Compliment</button>
+                    </div>
+                    <button id="get-compliment-btn" class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">
+                        Get a Compliment!
+                    </button>
+                    <p id="display-compliment" class="mt-4 text-xl font-semibold text-center text-amber-800 italic"></p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Map Marker Details -->
+    <div id="marker-detail-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="modal-city-name" class="text-2xl font-bold mb-4"></h3>
+            <label for="modal-note-input" class="block text-amber-800 text-sm font-bold mb-2">Note:</label>
+            <input type="text" id="modal-note-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-amber-700 leading-tight focus:outline-none focus:shadow-outline bg-amber-50 mb-4">
+            <div class="flex justify-around">
+                <button id="modal-save-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Save Changes</button>
+                <button id="modal-delete-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Delete Adventure</button>
+                <button id="modal-close-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (Version 9.x or later) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        // Firebase Configuration (provided by the environment)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let userId = null;
+        let isAuthReady = false;
+
+        // Authenticate user
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+            } else {
+                // Sign in anonymously if no user is logged in
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    userId = auth.currentUser.uid;
+                } else {
+                    await signInAnonymously(auth);
+                    userId = auth.currentUser.uid;
+                }
+            }
+            isAuthReady = true;
+            console.log("Firebase Auth Ready. User ID:", userId);
+            // After authentication, load data for all sections
+            loadAllData();
+            // Initialize the map with wonders and user adventures
+            initializeMap();
+        });
+
+        // --- Helper Functions ---
+        function getCollectionRef(collectionName) {
+            if (!userId) {
+                console.error("User not authenticated yet. Cannot get collection reference.");
+                return null;
+            }
+            // Use a subcollection path for public data
+            return collection(db, `artifacts/${appId}/public/data/${collectionName}`);
+        }
+
+        async function addDocument(collectionName, data) {
+            if (!isAuthReady) {
+                console.error("Firebase not ready. Cannot add document.");
+                return;
+            }
+            try {
+                const colRef = getCollectionRef(collectionName);
+                if (colRef) {
+                    await addDoc(colRef, { ...data, userId: userId, createdAt: serverTimestamp() }); // Use serverTimestamp
+                    console.log(`Document added to ${collectionName}.`);
+                }
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+
+        async function updateDocument(collectionName, docId, data) {
+            if (!isAuthReady) {
+                console.error("Firebase not ready. Cannot update document.");
+                return;
+            }
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
+                await updateDoc(docRef, { ...data, updatedAt: serverTimestamp() }); // Use serverTimestamp
+                console.log(`Document ${docId} updated in ${collectionName}.`);
+            } catch (e) {
+                console.error("Error updating document: ", e);
+            }
+        }
+
+        async function deleteDocument(collectionName, docId) {
+            if (!isAuthReady) {
+                console.error("Firebase not ready. Cannot delete document.");
+                return;
+            }
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/${collectionName}`, docId);
+                await deleteDoc(docRef);
+                console.log(`Document ${docId} deleted from ${collectionName}.`);
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+            }
+        }
+
+        function setupRealtimeListener(collectionName, callback) {
+            if (!isAuthReady) {
+                console.error("Firebase not ready. Cannot set up listener.");
+                return;
+            }
+            const colRef = getCollectionRef(collectionName);
+            if (colRef) {
+                // Order by createdAt for consistent display, if available
+                const q = query(colRef); // Removed orderBy to prevent index issues
+                onSnapshot(q, (snapshot) => {
+                    const items = [];
+                    snapshot.forEach((doc) => {
+                        items.push({ id: doc.id, ...doc.data() });
+                    });
+                    callback(items);
+                }, (error) => {
+                    console.error(`Error listening to ${collectionName}:`, error);
+                });
+            }
+        }
+
+        // --- Tab Navigation Logic ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        function showSection(id) {
+            contentSections.forEach(section => {
+                section.classList.remove('active');
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+
+            document.getElementById(id).classList.add('active');
+            document.querySelector(`.nav-link[href="#${id}"]`).classList.add('active');
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                showSection(targetId);
+            });
+        });
+
+        // Show the first section by default on load
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('reasons'); // Default to "Reasons I Love You"
+        });
+
+        // --- Section 1: Reasons I Love You ---
+        const reasons = [
+            "Your infectious laugh",
+            "Your kindness to everyone",
+            "The way you always know how to make me smile",
+            "Your unwavering support",
+            "Your adventurous spirit",
+            "Your brilliant mind",
+            "The comfort of your embrace",
+            "How you make ordinary moments extraordinary",
+            "Your passion for life",
+            "Your beautiful eyes",
+            "Your gentle touch",
+            "Your incredible strength",
+            "Your thoughtful gestures",
+            "Your unique perspective on the world",
+            "The way you listen",
+            "Your ability to forgive",
+            "Your warmth and compassion",
+            "Your sense of humor",
+            "Your honesty and integrity",
+            "Your creativity",
+            "Your resilience",
+            "Your calming presence",
+            "Your ability to make me feel safe",
+            "Your dreams and aspirations",
+            "Your zest for trying new things",
+            "Your patience",
+            "Your understanding heart",
+            "Your playful nature",
+            "Your dedication to what you believe in",
+            "Your courage",
+            "Your quiet moments of reflection",
+            "Your vibrant energy",
+            "Your comforting words",
+            "Your shared silences",
+            "Your unique quirks that make you, you",
+            "Your ability to make me a better person",
+            "Your love for animals",
+            "Your love for nature",
+            "Your favorite song",
+            "Your favorite book",
+            "Your favorite movie",
+            "Your favorite food",
+            "Your favorite color",
+            "Your favorite season",
+            "Your favorite memory with me",
+            "Your smile",
+            "Your hugs",
+            "Your kisses",
+            "Your voice",
+            "Your wisdom",
+            "Your grace",
+            "Your empathy",
+            "Your generosity",
+            "Your spirit",
+            "Your light",
+            "Your everything."
+        ];
+        const reasonText = document.getElementById('reason-text');
+        const reasonBtn = document.getElementById('reason-btn');
+
+        reasonBtn.addEventListener('click', () => {
+            const randomIndex = Math.floor(Math.random() * reasons.length);
+            reasonText.style.opacity = 0; // Start fade out
+            setTimeout(() => {
+                reasonText.textContent = reasons[randomIndex];
+                reasonText.style.opacity = 1; // Fade in new text
+            }, 500); // Wait for fade out to complete
+        });
+
+        // --- Section 2: Our Bucket List ---
+        const bucketItemInput = document.getElementById('bucket-item-input');
+        const addBucketItemBtn = document.getElementById('add-bucket-item-btn');
+        const bucketListItems = document.getElementById('bucket-list-items');
+
+        addBucketItemBtn.addEventListener('click', async () => {
+            const itemText = bucketItemInput.value.trim();
+            if (itemText) {
+                await addDocument('bucketList', { item: itemText, completed: false });
+                bucketItemInput.value = '';
+            }
+        });
+
+        function renderBucketList(items) {
+            bucketListItems.innerHTML = '';
+            items.sort((a, b) => a.completed - b.completed || (a.createdAt?.toDate() || 0) - (b.createdAt?.toDate() || 0)); // Sort by completion and then creation
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.className = `flex items-center justify-between p-3 rounded-lg transition-colors ${item.completed ? 'bg-green-100 text-green-800 line-through' : 'bg-white hover:bg-amber-50'}`;
+                li.innerHTML = `
+                    <span class="flex-grow text-lg">${item.item}</span>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" data-id="${item.id}" ${item.completed ? 'checked' : ''} class="bucket-checkbox form-checkbox h-5 w-5 text-green-600 rounded">
+                        <button data-id="${item.id}" class="delete-bucket-item text-red-500 hover:text-red-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                bucketListItems.appendChild(li);
+            });
+
+            // Add event listeners for checkboxes and delete buttons
+            bucketListItems.querySelectorAll('.bucket-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const id = e.target.dataset.id;
+                    await updateDocument('bucketList', id, { completed: e.target.checked });
+                });
+            });
+            bucketListItems.querySelectorAll('.delete-bucket-item').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    await deleteDocument('bucketList', id);
+                });
+            });
+        }
+
+        // --- Section 3: Adventure Awaits (Map) ---
+        const adventureCitySelect = document.getElementById('adventure-city');
+        const adventureNoteInput = document.getElementById('adventure-note');
+        const addAdventureBtn = document.getElementById('add-adventure-btn');
+        const mapMarkersDiv = document.getElementById('map-markers');
+
+        // Modal elements
+        const markerDetailModal = document.getElementById('marker-detail-modal');
+        const modalCityName = document.getElementById('modal-city-name');
+        const modalNoteInput = document.getElementById('modal-note-input');
+        const modalSaveBtn = document.getElementById('modal-save-btn');
+        const modalDeleteBtn = document.getElementById('modal-delete-btn');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        let currentEditingMarkerId = null; // To store the ID of the marker being edited
+
+        // Coordinates for the New7Wonders of the World (approximate for SVG map)
+        const sevenWonders = [
+            { name: "Great Wall of China", note: "An incredible feat of engineering!", lat: 40.4319, lon: 116.5704, x: 820, y: 170 },
+            { name: "Petra", note: "Ancient city carved into rock!", lat: 30.3285, lon: 35.4443, x: 670, y: 270 },
+            { name: "Colosseum", note: "Gladiators once roamed here!", lat: 41.8902, lon: 12.4922, x: 570, y: 220 },
+            { name: "Chichen Itza", note: "Mayan ruins, a true marvel!", lat: 20.6843, lon: -88.5678, x: 220, y: 250 },
+            { name: "Machu Picchu", note: "Lost city of the Incas!", lat: -13.1631, lon: -72.5450, x: 280, y: 390 },
+            { name: "Taj Mahal", note: "A monument to eternal love!", lat: 27.1751, lon: 78.0421, x: 740, y: 280 },
+            { name: "Christ the Redeemer", note: "Iconic statue overlooking Rio!", lat: -22.9519, lon: -43.2105, x: 370, y: 420 }
+        ];
+
+        // Expanded list of world cities with approximate SVG map coordinates
+        const worldCities = [
+            { name: "New York City", lat: 40.7128, lon: -74.0060, x: 200, y: 190 },
+            { name: "London", lat: 51.5074, lon: -0.1278, x: 550, y: 180 },
+            { name: "Paris", lat: 48.8566, lon: 2.3522, x: 560, y: 200 },
+            { name: "Tokyo", lat: 35.6895, lon: 139.6917, x: 900, y: 220 },
+            { name: "Sydney", lat: -33.8688, lon: 151.2093, x: 900, y: 400 },
+            { name: "Rome", lat: 41.9028, lon: 12.4964, x: 580, y: 230 },
+            { name: "Cairo", lat: 30.0444, lon: 31.2357, x: 650, y: 280 },
+            { name: "Rio de Janeiro", lat: -22.9068, lon: -43.1729, x: 380, y: 430 },
+            { name: "Dubai", lat: 25.276987, lon: 55.296249, x: 700, y: 290 },
+            { name: "Beijing", lat: 39.9042, lon: 116.4074, x: 810, y: 180 },
+            { name: "Moscow", lat: 55.7558, lon: 37.6173, x: 650, y: 150 },
+            { name: "Berlin", lat: 52.5200, lon: 13.4050, x: 570, y: 190 },
+            { name: "Madrid", lat: 40.4168, lon: -3.7038, x: 540, y: 220 },
+            { name: "Amsterdam", lat: 52.3676, lon: 4.9041, x: 550, y: 170 },
+            { name: "Prague", lat: 50.0755, lon: 14.4378, x: 580, y: 190 },
+            { name: "Vienna", lat: 48.2082, lon: 16.3738, x: 590, y: 200 },
+            { name: "Barcelona", lat: 41.3851, lon: 2.1734, x: 550, y: 230 },
+            { name: "Lisbon", lat: 38.7223, lon: -9.1393, x: 530, y: 240 },
+            { name: "Dublin", lat: 53.3498, lon: -6.2603, x: 520, y: 170 },
+            { name: "Edinburgh", lat: 55.9533, lon: -3.1883, x: 530, y: 160 },
+            { name: "Reykjavik", lat: 64.9631, lon: -19.0208, x: 480, y: 100 },
+            { name: "Toronto", lat: 43.6532, lon: -79.3832, x: 220, y: 180 },
+            { name: "Vancouver", lat: 49.2827, lon: -123.1207, x: 100, y: 150 },
+            { name: "Mexico City", lat: 19.4326, lon: -99.1332, x: 190, y: 280 },
+            { name: "Buenos Aires", lat: -34.6037, lon: -58.3816, x: 390, y: 460 },
+            { name: "Santiago", lat: -33.4489, lon: -70.6693, x: 300, y: 450 },
+            { name: "Lima", lat: -12.0464, lon: -77.0428, x: 300, y: 400 },
+            { name: "Bogota", lat: 4.7110, lon: -74.0721, x: 320, y: 350 },
+            { name: "São Paulo", lat: -23.5505, lon: -46.6333, x: 400, y: 450 },
+            { name: "Cape Town", lat: -33.9249, lon: 18.4241, x: 600, y: 450 },
+            { name: "Nairobi", lat: -1.2921, lon: 36.8219, x: 680, y: 350 },
+            { name: "Marrakech", lat: 31.6295, lon: -7.9811, x: 500, y: 300 },
+            { name: "Istanbul", lat: 41.0082, lon: 28.9784, x: 620, y: 230 },
+            { name: "Athens", lat: 37.9838, lon: 23.7275, x: 610, y: 250 },
+            { name: "Jerusalem", lat: 31.7683, lon: 35.2137, x: 660, y: 280 },
+            { name: "Mumbai", lat: 19.0760, lon: 72.8777, x: 750, y: 300 },
+            { name: "Delhi", lat: 28.7041, lon: 77.1025, x: 760, y: 270 },
+            { name: "Bangkok", lat: 13.7563, lon: 100.5018, x: 830, y: 320 },
+            { name: "Singapore", lat: 1.3521, lon: 103.8198, x: 850, y: 350 },
+            { name: "Hong Kong", lat: 22.3193, lon: 114.1694, x: 860, y: 280 },
+            { name: "Seoul", lat: 37.5665, lon: 126.9780, x: 880, y: 230 },
+            { name: "Shanghai", lat: 31.2304, lon: 121.4737, x: 860, y: 250 },
+            { name: "Kyoto", lat: 35.0116, lon: 135.7681, x: 890, y: 240 },
+            { name: "Osaka", lat: 34.6937, lon: 135.5022, x: 895, y: 250 },
+            { name: "Melbourne", lat: -37.8136, lon: 144.9631, x: 890, y: 420 },
+            { name: "Auckland", lat: -36.8485, lon: 174.7633, x: 950, y: 460 },
+            { name: "Vancouver", lat: 49.2827, lon: -123.1207, x: 100, y: 150 },
+            { name: "San Francisco", lat: 37.7749, lon: -122.4194, x: 120, y: 200 },
+            { name: "Los Angeles", lat: 34.0522, lon: -118.2437, x: 130, y: 220 },
+            { name: "Chicago", lat: 41.8781, lon: -87.6298, x: 250, y: 190 },
+            { name: "Miami", lat: 25.7617, lon: -80.1918, x: 260, y: 280 },
+            { name: "New Orleans", lat: 29.9511, lon: -90.0715, x: 230, y: 290 },
+            { name: "Las Vegas", lat: 36.1699, lon: -115.1398, x: 150, y: 230 },
+            { name: "Seattle", lat: 47.6062, lon: -122.3321, x: 90, y: 140 },
+            { name: "Denver", lat: 39.7392, lon: -104.9903, x: 180, y: 210 },
+            { name: "Houston", lat: 29.7604, lon: -95.3698, x: 240, y: 300 },
+            { name: "Boston", lat: 42.3601, lon: -71.0589, x: 280, y: 170 },
+            { name: "Washington D.C.", lat: 38.9072, lon: -77.0369, x: 270, y: 200 },
+            { name: "Orlando", lat: 28.5383, lon: -81.3792, x: 270, y: 270 },
+            { name: "San Diego", lat: 32.7157, lon: -117.1611, x: 125, y: 235 },
+            { name: "Dallas", lat: 32.7767, lon: -96.7970, x: 230, y: 270 },
+            { name: "Philadelphia", lat: 39.9526, lon: -75.1652, x: 275, y: 190 },
+            { name: "Atlanta", lat: 33.7490, lon: -84.3880, x: 270, y: 240 },
+            { name: "Phoenix", lat: 33.4484, lon: -112.0740, x: 140, y: 240 },
+            { name: "Detroit", lat: 42.3314, lon: -83.0458, x: 260, y: 170 },
+            { name: "Minneapolis", lat: 44.9778, lon: -93.2650, x: 220, y: 160 },
+            { name: "St. Louis", lat: 38.6270, lon: -90.1994, x: 250, y: 220 },
+            { name: "Portland", lat: 45.5152, lon: -122.6784, x: 100, y: 160 },
+            { name: "Nashville", lat: 36.1627, lon: -86.7816, x: 260, y: 230 },
+            { name: "Charlotte", lat: 35.2271, lon: -80.8431, x: 280, y: 220 },
+            { name: "San Antonio", lat: 29.4241, lon: -98.4936, x: 220, y: 290 },
+            { name: "Austin", lat: 30.2672, lon: -97.7431, x: 225, y: 285 },
+            { name: "Indianapolis", lat: 39.7684, lon: -86.1581, x: 260, y: 200 },
+            { name: "Columbus", lat: 39.9612, lon: -82.9988, x: 270, y: 195 },
+            { name: "Jacksonville", lat: 30.3322, lon: -81.6557, x: 280, y: 260 },
+            { name: "Memphis", lat: 35.1495, lon: -90.0490, x: 240, y: 250 },
+            { name: "Baltimore", lat: 39.2904, lon: -76.6122, x: 280, y: 195 },
+            { name: "Milwaukee", lat: 43.0389, lon: -87.9065, x: 240, y: 160 },
+            { name: "Kansas City", lat: 39.0997, lon: -94.5786, x: 230, y: 230 },
+            { name: "Omaha", lat: 41.2565, lon: -95.9980, x: 210, y: 200 },
+            { name: "Cleveland", lat: 41.4993, lon: -81.6944, x: 270, y: 170 },
+            { name: "Raleigh", lat: 35.7796, lon: -78.6382, x: 285, y: 215 },
+            { name: "Virginia Beach", lat: 36.8529, lon: -75.9780, x: 290, y: 210 },
+            { name: "Colorado Springs", lat: 38.8339, lon: -104.8214, x: 185, y: 225 },
+            { name: "Sacramento", lat: 38.5816, lon: -121.4944, x: 115, y: 205 },
+            { name: "Atlanta", lat: 33.7490, lon: -84.3880, x: 270, y: 240 },
+            { name: "Edinburgh", lat: 55.9533, lon: -3.1883, x: 530, y: 160 },
+            { name: "Venice", lat: 45.4408, lon: 12.3155, x: 590, y: 210 },
+            { name: "Florence", lat: 43.7696, lon: 11.2558, x: 585, y: 220 },
+            { name: "Kyoto", lat: 35.0116, lon: 135.7681, x: 890, y: 240 },
+            { name: "Barcelona", lat: 41.3851, lon: 2.1734, x: 550, y: 230 },
+            { name: "Lisbon", lat: 38.7223, lon: -9.1393, x: 530, y: 240 },
+            { name: "Amsterdam", lat: 52.3676, lon: 4.9041, x: 550, y: 170 },
+            { name: "Prague", lat: 50.0755, lon: 14.4378, x: 580, y: 190 },
+            { name: "Vienna", lat: 48.2082, lon: 16.3738, x: 590, y: 200 },
+            { name: "Budapest", lat: 47.4979, lon: 19.0402, x: 600, y: 205 },
+            { name: "Warsaw", lat: 52.2297, lon: 21.0122, x: 600, y: 180 },
+            { name: "Stockholm", lat: 59.3293, lon: 18.0686, x: 590, y: 150 },
+            { name: "Oslo", lat: 59.9139, lon: 10.7522, x: 560, y: 140 },
+            { name: "Copenhagen", lat: 55.6761, lon: 12.5683, x: 570, y: 160 },
+            { name: "Helsinki", lat: 60.1695, lon: 24.9354, x: 620, y: 120 },
+            { name: "St. Petersburg", lat: 59.9343, lon: 30.3351, x: 630, y: 130 },
+            { name: "Moscow", lat: 55.7558, lon: 37.6173, x: 650, y: 150 },
+            { name: "Kyiv", lat: 50.4501, lon: 30.5234, x: 640, y: 190 },
+            { name: "Bucharest", lat: 44.4268, lon: 26.1025, x: 630, y: 220 },
+            { name: "Sofia", lat: 42.6977, lon: 23.3219, x: 620, y: 230 },
+            { name: "Belgrade", lat: 44.7872, lon: 20.4573, x: 600, y: 230 },
+            { name: "Zagreb", lat: 45.8150, lon: 15.9819, x: 590, y: 220 },
+            { name: "Ljubljana", lat: 46.0569, lon: 14.5058, x: 580, y: 225 },
+            { name: "Zurich", lat: 47.3769, lon: 8.5417, x: 570, y: 200 },
+            { name: "Geneva", lat: 46.2044, lon: 6.1432, x: 560, y: 210 },
+            { name: "Milan", lat: 45.4642, lon: 9.1900, x: 570, y: 215 },
+            { name: "Naples", lat: 40.8518, lon: 14.2681, x: 590, y: 240 },
+            { name: "Palermo", lat: 38.1157, lon: 13.3596, x: 580, y: 260 },
+            { name: "Malta", lat: 35.9375, lon: 14.3754, x: 590, y: 270 },
+            { name: "Tunis", lat: 36.8065, lon: 10.1815, x: 570, y: 290 },
+            { name: "Algiers", lat: 36.7372, lon: 3.0865, x: 540, y: 280 },
+            { name: "Casablanca", lat: 33.5731, lon: -7.5898, x: 520, y: 300 },
+            { name: "Dakar", lat: 14.4974, lon: -14.4524, x: 450, y: 350 },
+            { name: "Accra", lat: 5.6037, lon: -0.1870, x: 500, y: 380 },
+            { name: "Lagos", lat: 6.5244, lon: 3.3792, x: 520, y: 380 },
+            { name: "Kinshasa", lat: -4.4419, lon: 15.2663, x: 580, y: 400 },
+            { name: "Addis Ababa", lat: 9.0054, lon: 38.7636, x: 700, y: 340 },
+            { name: "Riyadh", lat: 24.7136, lon: 46.6753, x: 700, y: 290 },
+            { name: "Doha", lat: 25.2854, lon: 51.5310, x: 710, y: 300 },
+            { name: "Abu Dhabi", lat: 24.4539, lon: 54.3773, x: 715, y: 305 },
+            { name: "Tehran", lat: 35.6892, lon: 51.3890, x: 700, y: 250 },
+            { name: "Karachi", lat: 24.8615, lon: 67.0099, x: 740, y: 290 },
+            { name: "Lahore", lat: 31.5498, lon: 74.3436, x: 760, y: 270 },
+            { name: "Kathmandu", lat: 27.7172, lon: 85.3240, x: 790, y: 270 },
+            { name: "Dhaka", lat: 23.8103, lon: 90.4125, x: 800, y: 290 },
+            { name: "Yangon", lat: 16.8409, lon: 96.1735, x: 820, y: 310 },
+            { name: "Hanoi", lat: 21.0278, lon: 105.8342, x: 840, y: 300 },
+            { name: "Ho Chi Minh City", lat: 10.8231, lon: 106.6297, x: 850, y: 330 },
+            { name: "Kuala Lumpur", lat: 3.1390, lon: 101.6869, x: 860, y: 340 },
+            { name: "Jakarta", lat: -6.2088, lon: 106.8456, x: 870, y: 360 },
+            { name: "Manila", lat: 14.5995, lon: 120.9842, x: 890, y: 310 },
+            { name: "Taipei", lat: 25.0330, lon: 121.5654, x: 880, y: 260 },
+            { name: "Busan", lat: 35.1796, lon: 129.0756, x: 900, y: 240 },
+            { name: "Sapporo", lat: 43.0621, lon: 141.3545, x: 920, y: 180 },
+            { name: "Perth", lat: -31.9505, lon: 115.8605, x: 800, y: 420 },
+            { name: "Adelaide", lat: -34.9285, lon: 138.6007, x: 850, y: 430 },
+            { name: "Brisbane", lat: -27.4698, lon: 153.0251, x: 920, y: 410 },
+            { name: "Christchurch", lat: -43.5321, lon: 172.6362, x: 960, y: 480 },
+            { name: "Wellington", lat: -41.2865, lon: 174.7762, x: 970, y: 470 },
+            { name: "Honolulu", lat: 21.3099, lon: -157.8583, x: 0, y: 250 },
+            { name: "Anchorage", lat: 61.2181, lon: -149.9003, x: 100, y: 80 },
+            { name: "Fairbanks", lat: 64.8378, lon: -147.7164, x: 120, y: 60 },
+            { name: "Juneau", lat: 58.3019, lon: -134.4197, x: 90, y: 100 }
+        ];
+
+        // Populate city dropdown
+        function populateCityDropdown() {
+            adventureCitySelect.innerHTML = '<option value="">Select a City or Wonder</option>';
+            // Combine wonders and cities, sort alphabetically
+            const allLocations = [...sevenWonders, ...worldCities].sort((a, b) => a.name.localeCompare(b.name));
+            allLocations.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.name;
+                option.textContent = city.name;
+                adventureCitySelect.appendChild(option);
+            });
+        }
+
+        // Function to convert lat/lon to SVG x/y
+        function latLonToSvg(lat, lon) {
+            // This is a simplified equirectangular projection for a 1000x500 SVG.
+            // Adjust these scaling factors and offsets as needed for your specific map SVG.
+            const svgWidth = 1000;
+            const svgHeight = 500;
+            
+            // Map longitude (-180 to 180) to x (0 to svgWidth)
+            const x = (lon + 180) * (svgWidth / 360);
+            
+            // Map latitude (-90 to 90) to y (0 to svgHeight), inverted for SVG
+            // A common projection for latitude is to use mercator or similar,
+            // but for simplicity on a basic SVG, a linear scale might be used,
+            // or a slightly adjusted one. Let's use a simple linear one for now,
+            // but adjust the range to make poles less stretched.
+            const y = svgHeight - ((lat + 90) * (svgHeight / 180)); // Invert y-axis for SVG
+
+            // Fine-tuning offsets and scaling for better visual alignment with the provided SVG
+            // These values are approximate and may need further tweaking based on the exact SVG path data
+            const adjustedX = x * 0.95 + 50; // Scale and shift X
+            const adjustedY = y * 1.1 - 50; // Scale and shift Y
+
+            return { x: adjustedX, y: adjustedY };
+        }
+
+        // Add pre-defined wonders if they don't exist in Firestore
+        async function addWondersToFirestore() {
+            const mapAdventuresRef = getCollectionRef('mapAdventures');
+            if (!mapAdventuresRef) return;
+
+            for (const wonder of sevenWonders) {
+                const q = query(mapAdventuresRef, where("city", "==", wonder.name));
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) {
+                    // Wonder does not exist, add it
+                    await addDoc(mapAdventuresRef, {
+                        city: wonder.name,
+                        note: wonder.note,
+                        lat: wonder.lat,
+                        lon: wonder.lon,
+                        x: wonder.x, // Use pre-defined SVG coords for wonders
+                        y: wonder.y, // Use pre-defined SVG coords for wonders
+                        isWonder: true, // Mark as a wonder
+                        userId: 'system', // System-added
+                        createdAt: serverTimestamp() // Use serverTimestamp
+                    });
+                    console.log(`Added ${wonder.name} to map adventures.`);
+                }
+            }
+        }
+
+        function renderMapMarkers(adventures) {
+            mapMarkersDiv.innerHTML = ''; // Clear existing markers
+            const mapSvg = document.querySelector('.map-svg');
+            const svgRect = mapSvg.getBoundingClientRect();
+            const svgViewBox = mapSvg.viewBox.baseVal;
+
+            adventures.forEach(adventure => {
+                const marker = document.createElement('div');
+                marker.className = 'map-marker';
+                marker.dataset.id = adventure.id;
+                marker.dataset.city = adventure.city;
+                marker.dataset.note = adventure.note;
+
+                // Calculate position based on SVG viewBox and actual SVG size
+                // If adventure has specific x, y (like wonders), use them. Otherwise, calculate from lat/lon.
+                let markerX, markerY;
+                if (adventure.x && adventure.y) {
+                    markerX = (adventure.x / svgViewBox.width) * svgRect.width;
+                    markerY = (adventure.y / svgViewBox.height) * svgRect.height;
+                } else {
+                    const { x, y } = latLonToSvg(adventure.lat, adventure.lon);
+                    markerX = (x / svgViewBox.width) * svgRect.width;
+                    markerY = (y / svgViewBox.height) * svgRect.height;
+                }
+                
+                marker.style.left = `${markerX}px`;
+                marker.style.top = `${markerY}px`;
+
+                // Add tooltip
+                marker.title = `${adventure.city}: ${adventure.note}`;
+
+                marker.addEventListener('click', () => {
+                    currentEditingMarkerId = adventure.id;
+                    modalCityName.textContent = adventure.city;
+                    modalNoteInput.value = adventure.note;
+                    markerDetailModal.classList.remove('hidden');
+                });
+
+                mapMarkersDiv.appendChild(marker);
+            });
+        }
+
+        addAdventureBtn.addEventListener('click', async () => {
+            const cityName = adventureCitySelect.value;
+            const note = adventureNoteInput.value.trim();
+
+            if (cityName && note) {
+                const selectedCityData = [...sevenWonders, ...worldCities].find(city => city.name === cityName);
+
+                if (selectedCityData) {
+                    await addDocument('mapAdventures', {
+                        city: cityName,
+                        note: note,
+                        lat: selectedCityData.lat,
+                        lon: selectedCityData.lon,
+                        x: selectedCityData.x, // Use pre-defined SVG coords if available
+                        y: selectedCityData.y, // Use pre-defined SVG coords if available
+                        isWonder: selectedCityData.isWonder || false
+                    });
+                    adventureCitySelect.value = '';
+                    adventureNoteInput.value = '';
+                } else {
+                    console.error("Selected city data not found.");
+                    // Potentially allow manual input for lat/lon if not found in predefined list
+                }
+            } else {
+                console.warn("Please select a city and add a note for your adventure.");
+            }
+        });
+
+        // Modal event listeners
+        modalCloseBtn.addEventListener('click', () => {
+            markerDetailModal.classList.add('hidden');
+            currentEditingMarkerId = null;
+        });
+
+        modalSaveBtn.addEventListener('click', async () => {
+            if (currentEditingMarkerId) {
+                const newNote = modalNoteInput.value.trim();
+                if (newNote) {
+                    await updateDocument('mapAdventures', currentEditingMarkerId, { note: newNote });
+                    markerDetailModal.classList.add('hidden');
+                    currentEditingMarkerId = null;
+                } else {
+                    console.warn("Note cannot be empty.");
+                }
+            }
+        });
+
+        modalDeleteBtn.addEventListener('click', async () => {
+            if (currentEditingMarkerId && confirm("Are you sure you want to delete this adventure?")) {
+                await deleteDocument('mapAdventures', currentEditingMarkerId);
+                markerDetailModal.classList.add('hidden');
+                currentEditingMarkerId = null;
+            }
+        });
+
+        // Initial map setup
+        async function initializeMap() {
+            populateCityDropdown();
+            await addWondersToFirestore(); // Add wonders on initial load if not present
+            setupRealtimeListener('mapAdventures', renderMapMarkers);
+        }
+
+        // --- Section 6: Plan a Date ---
+        const dateIdeaInput = document.getElementById('date-idea-input');
+        const addDateIdeaBtn = document.getElementById('add-date-idea-btn');
+        const dateIdeasList = document.getElementById('date-ideas-list');
+        const pickDateBtn = document.getElementById('pick-date-btn');
+        const pickedDateIdeaDisplay = document.getElementById('picked-date-idea');
+
+        addDateIdeaBtn.addEventListener('click', async () => {
+            const ideaText = dateIdeaInput.value.trim();
+            if (ideaText) {
+                await addDocument('dateIdeas', { idea: ideaText });
+                dateIdeaInput.value = '';
+            }
+        });
+
+        function renderDateIdeas(ideas) {
+            dateIdeasList.innerHTML = '';
+            ideas.forEach(idea => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 rounded-lg bg-white hover:bg-amber-50 transition-colors';
+                li.innerHTML = `
+                    <span class="flex-grow text-lg">${idea.idea}</span>
+                    <button data-id="${idea.id}" class="delete-date-idea-item text-red-500 hover:text-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1zm2 6a1 1 0 100 2h2a1 1 0 100-2H9z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                dateIdeasList.appendChild(li);
+            });
+
+            dateIdeasList.querySelectorAll('.delete-date-idea-item').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    await deleteDocument('dateIdeas', id);
+                });
+            });
+        }
+
+        pickDateBtn.addEventListener('click', async () => {
+            const dateIdeasSnapshot = await getDocs(getCollectionRef('dateIdeas'));
+            const ideas = [];
+            dateIdeasSnapshot.forEach(doc => ideas.push({ id: doc.id, ...doc.data() }));
+
+            if (ideas.length > 0) {
+                const randomIndex = Math.floor(Math.random() * ideas.length);
+                pickedDateIdeaDisplay.textContent = `Let's go for: ${ideas[randomIndex].idea}! ❤️`;
+            } else {
+                pickedDateIdeaDisplay.textContent = "Add some date ideas first!";
+            }
+        });
+
+        // --- Section 7: Compliment Jar ---
+        const complimentInput = document.getElementById('compliment-input');
+        const addComplimentBtn = document.getElementById('add-compliment-btn');
+        const getComplimentBtn = document.getElementById('get-compliment-btn');
+        const displayCompliment = document.getElementById('display-compliment');
+
+        addComplimentBtn.addEventListener('click', async () => {
+            const complimentText = complimentInput.value.trim();
+            if (complimentText) {
+                await addDocument('compliments', { text: complimentText });
+                complimentInput.value = '';
+            }
+        });
+
+        getComplimentBtn.addEventListener('click', async () => {
+            const complimentsSnapshot = await getDocs(getCollectionRef('compliments'));
+            const compliments = [];
+            complimentsSnapshot.forEach(doc => compliments.push({ id: doc.id, ...doc.data() }));
+
+            if (compliments.length > 0) {
+                const randomIndex = Math.floor(Math.random() * compliments.length);
+                displayCompliment.style.opacity = 0;
+                setTimeout(() => {
+                    displayCompliment.textContent = `"${compliments[randomIndex].text}"`;
+                    displayCompliment.style.opacity = 1;
+                }, 500);
+            } else {
+                displayCompliment.textContent = "No compliments yet! Add some to the jar. 😉";
+            }
+        });
+
+        // --- Load All Data on Auth Ready ---
+        function loadAllData() {
+            setupRealtimeListener('bucketList', renderBucketList);
+            setupRealtimeListener('dateIdeas', renderDateIdeas);
+            // Map adventures are initialized separately in initializeMap()
+        }
+
     </script>
 </body>
 </html>
